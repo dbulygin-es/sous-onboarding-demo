@@ -129,6 +129,14 @@
     .arrow-col { min-height: auto; padding: 0.5rem; flex-direction: row; }
     .api-calls, .api-calls-3 { grid-template-columns: 1fr; }
   }
+  .bdd-section { margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+  .bdd-section-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.6rem; }
+  .bdd-section-title a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+  .bdd-cards { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .bdd-card { display: flex; align-items: center; gap: 0.5rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; text-decoration: none; transition: border-color 0.15s; }
+  .bdd-card:hover { border-color: var(--stripe); }
+  .bdd-id { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; font-weight: 700; color: var(--stripe); background: var(--stripe-bg); border: 1px solid var(--stripe-border); padding: 0.1rem 0.3rem; border-radius: 3px; white-space: nowrap; }
+  .bdd-name { font-size: 0.77rem; color: var(--text-muted); }
 </style>
 </head>
 <body>
@@ -258,6 +266,13 @@ getIdToken(<span class="comment">/* forceRefresh */</span> <span class="num">fal
 }</code></pre>
       <div class="storage-bar">localStorage ← <strong>registration_id</strong>: "reg-8821"</div>
       <div class="callout info"><span class="callout-icon">ℹ</span><span>Phase 4 only. If this endpoint doesn't exist yet, skip it — all other steps work without it. The registration draft enables cross-device resume.</span></div>
+    </div>
+  </div>
+  <div class="bdd-section">
+    <div class="bdd-section-title">↗ BDD Scenarios — <a href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank">see PRD</a></div>
+    <div class="bdd-cards">
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-1</span><span class="bdd-name">Successful Step 1 submission</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-2</span><span class="bdd-name">Email already registered in Firebase</span></a>
     </div>
   </div>
 </div>
@@ -432,6 +447,15 @@ PATCH /registrations/reg-8821/
   </div>
 
   <div class="callout danger"><span class="callout-icon">!</span><div><strong>Sequential dependency:</strong> kitchen creation requires <code>company_id</code>; vendor creation requires <code>kitchen_id</code>. Do NOT run these in parallel. On partial failure, store whichever IDs were returned and retry only the failed call on the next "Continue" click.</div></div>
+  <div class="bdd-section">
+    <div class="bdd-section-title">↗ BDD Scenarios — <a href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank">see PRD</a></div>
+    <div class="bdd-cards">
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-3</span><span class="bdd-name">Successful Step 2 submission</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-4</span><span class="bdd-name">Kitchen fails after company succeeds</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-5</span><span class="bdd-name">Idempotent retry — company already exists</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-6</span><span class="bdd-name">Multiple locations</span></a>
+    </div>
+  </div>
 </div>
 
 <!-- STEP 3 -->
@@ -524,6 +548,13 @@ PATCH /registrations/reg-8821/
       </div>
     </div>
   </div>
+  <div class="bdd-section">
+    <div class="bdd-section-title">↗ BDD Scenarios — <a href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank">see PRD</a></div>
+    <div class="bdd-cards">
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-11</span><span class="bdd-name">Successful plan selection and payment</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-12</span><span class="bdd-name">Merchant cancels Stripe Checkout</span></a>
+    </div>
+  </div>
 </div>
 
 <!-- STEP 4 -->
@@ -575,6 +606,14 @@ PATCH /registrations/reg-8821/
   </div>
 
   <div class="callout info"><span class="callout-icon">ℹ</span><span><strong>Current gap:</strong> <code>getStripeConnectOnboardingLink</code> in <span class="field fe-field">src/services/api.ts</span> is never called from any component. The "Connect bank account" screen and its button need to be identified or built. Where it appears in the step flow is an open question for the team.</span></div>
+  <div class="bdd-section">
+    <div class="bdd-section-title">↗ BDD Scenarios — <a href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank">see PRD</a></div>
+    <div class="bdd-cards">
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-8</span><span class="bdd-name">First-time Stripe Connect setup</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-9</span><span class="bdd-name">Merchant returns after completing Stripe onboarding</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-10</span><span class="bdd-name">Stripe link expired</span></a>
+    </div>
+  </div>
 </div>
 
 <!-- STEP 5 — Full Field Map -->
@@ -871,6 +910,13 @@ PATCH /registrations/reg-8821/
 
   <div class="callout warn"><span class="callout-icon">⚠</span><div><strong>Open questions before implementation:</strong> Confirm exact HubSpot pipeline IDs and stage IDs (need HubSpot account access). Confirm whether a HubSpot integration module already exists in Django or needs to be built from scratch.</div></div>
   <div class="callout danger" style="margin-top:0.75rem;"><span class="callout-icon">!</span><div><strong>Failure handling:</strong> Log failure with <code>registration_id</code> and retry via Django task queue. Never surface HubSpot errors to the merchant. The merchant's onboarding is complete regardless of HubSpot sync outcome.</div></div>
+  <div class="bdd-section">
+    <div class="bdd-section-title">↗ BDD Scenarios — <a href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank">see PRD</a></div>
+    <div class="bdd-cards">
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-13</span><span class="bdd-name">HubSpot sync on registration complete</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-14</span><span class="bdd-name">HubSpot sync fails</span></a>
+    </div>
+  </div>
 </div>
 
 </div>
