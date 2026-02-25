@@ -149,8 +149,10 @@
 <div class="step-nav">
   <button class="step-btn fe active" onclick="showStep(0)">1. Account &amp; Contact</button>
   <button class="step-btn dj" onclick="showStep(1)">2. Company Info</button>
-  <button class="step-btn st" onclick="showStep(2)">3. Subscription</button>
-  <button class="step-btn st" onclick="showStep(3)">4. Stripe Connect</button>
+  <button class="step-btn dj" onclick="showStep(6)">3. Commerce</button>
+  <button class="step-btn st" onclick="showStep(2)">4. Subscription</button>
+  <button class="step-btn" onclick="showStep(7)">5. Spotlight</button>
+  <button class="step-btn st" onclick="showStep(3)">6. Stripe Connect ⏸</button>
   <button class="step-btn" onclick="showStep(4)">Full Field Map</button>
   <button class="step-btn hs" onclick="showStep(5)">HubSpot Sync</button>
 </div>
@@ -279,13 +281,13 @@ getIdToken(<span class="comment">/* forceRefresh */</span> <span class="num">fal
 
 <!-- STEP 2 -->
 <div class="step-content" id="step-1">
-  <p class="section-title">Merchant completes company screens (2a → 2b → 2c), clicks "Continue" — three sequential Django calls</p>
+  <p class="section-title">Merchant completes company info screens, clicks "Continue" — data saved to draft. Django calls happen at the Commerce step when VAT/KvK are available.</p>
 
   <div class="flow">
     <div class="panel fe">
       <div class="panel-header"><span class="dot"></span>Frontend form data (raw)</div>
       <div class="panel-body">
-<pre><code><span class="comment">// Screens 2a + 2b + 2c combined</span>
+<pre><code><span class="comment">// Screens 2a + 2b combined</span>
 <span class="comment">// (RegistrationContext.company)</span>
 
 <span class="key">business_structure</span>: <span class="str">"corporate"</span>
@@ -297,10 +299,6 @@ getIdToken(<span class="comment">/* forceRefresh */</span> <span class="num">fal
 <span class="key">city</span>:          <span class="str">"Amsterdam"</span>
 <span class="key">country</span>:       <span class="str">"NL"</span>
 
-<span class="key">vat_number</span>: <span class="str">"NL123456789B01"</span>
-<span class="key">chamber_of_commerce_number</span>:
-            <span class="str">"12345678"</span>
-
 <span class="key">additional_locations</span>: <span class="num">[]</span>
 
 <span class="comment">// From Step 1 (RegistrationContext.user)</span>
@@ -308,6 +306,7 @@ getIdToken(<span class="comment">/* forceRefresh */</span> <span class="num">fal
 <span class="key">last_name</span>:  <span class="str">"De Vries"</span>
 <span class="key">email</span>:      <span class="str">"jane@techbistro.nl"</span>
 <span class="key">phone</span>:      <span class="str">"+31612345678"</span></code></pre>
+        <div class="callout warn" style="margin-top:0.75rem;"><span class="callout-icon">⚠</span><span><strong>VAT (BTW) and KvK</strong> are collected on the <strong>Commerce step</strong>, not here. POST /companies/ is deferred until the Commerce step when all fields are available.</span></div>
       </div>
     </div>
 
@@ -357,103 +356,35 @@ min_order_value    = <span class="num">0</span></code></pre>
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </div>
 
-    <div class="panel dj">
-      <div class="panel-header"><span class="dot"></span>Django API chain</div>
+    <div class="panel" style="border-color:var(--storage-border);">
+      <div class="panel-header" style="background:var(--storage-bg);color:var(--storage);"><span class="dot" style="background:var(--storage)"></span>Draft save (localStorage)</div>
       <div class="panel-body">
-<pre><code><span class="comment">// 1. Create company → get company_id</span>
-POST /companies/
-<span class="comment">// → { id: 501 }</span>
+<pre><code><span class="comment">// No Django calls at this step.
+// Company address data is saved to
+// localStorage for use at Commerce step.</span>
 
-<span class="comment">// 2. Create kitchen → get kitchen_id</span>
-<span class="comment">//    (needs company_id from step 1)</span>
-POST /kitchens/
-<span class="comment">// → { id: 887 }</span>
+localStorage.company_draft = {
+  <span class="key">"legal_name"</span>:    <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"address_line1"</span>: <span class="str">"Keizersgracht 123"</span>,
+  <span class="key">"postal_code"</span>:   <span class="str">"1015 CJ"</span>,
+  <span class="key">"city"</span>:          <span class="str">"Amsterdam"</span>,
+  <span class="key">"country"</span>:       <span class="str">"NL"</span>,
+  <span class="key">"business_type"</span>: <span class="str">"restaurant"</span>
+}
 
-<span class="comment">// 3. Create vendor → get vendor_id</span>
-<span class="comment">//    (needs kitchen_id from step 2)</span>
-POST /vendors/
-<span class="comment">// → { id: 334 }</span>
-
-<span class="comment">// 4. Record progress (Phase 4)</span>
+<span class="comment">// Phase 4 only:</span>
 PATCH /registrations/reg-8821/
-<span class="comment">// → 200 OK</span></code></pre>
-        <div class="storage-bar" style="margin-top:1rem;">localStorage ← <strong>company_id</strong>: 501 &nbsp;|&nbsp; <strong>kitchen_id</strong>: 887 &nbsp;|&nbsp; <strong>vendor_id</strong>: 334</div>
+<span class="comment">// → 200 OK (cross-device resume)</span></code></pre>
+        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">→</span><span>The merchant continues to the Commerce step where VAT/KvK are collected and all three Django records are created.</span></div>
       </div>
     </div>
   </div>
 
-  <div class="api-calls-3">
-    <div class="full-section">
-      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>POST /companies/ <span class="badge badge-new">NEW</span></div>
-      <div class="panel-body">
-<pre><code>{
-  <span class="key">"name"</span>:                <span class="str">"Tech Bistro BV"</span>,
-  <span class="key">"invoice_legal_name"</span>:  <span class="str">"Tech Bistro BV"</span>,
-  <span class="key">"slug"</span>:                <span class="str">"tech-bistro-bv"</span>,
-  <span class="key">"street"</span>:              <span class="str">"Keizersgracht 123"</span>,
-  <span class="key">"postal_code"</span>:         <span class="str">"1015 CJ"</span>,
-  <span class="key">"city"</span>:                <span class="str">"Amsterdam"</span>,
-  <span class="key">"country"</span>:             <span class="str">"NL"</span>,
-  <span class="key">"company_type"</span>:        <span class="str">"restaurant"</span>,
-  <span class="key">"vat_number"</span>:          <span class="str">"NL123456789B01"</span>,
-  <span class="key">"kvk_number"</span>:          <span class="str">"12345678"</span>,
-  <span class="key">"contact_person_name"</span>: <span class="str">"Jane De Vries"</span>,
-  <span class="key">"contact_person_email"</span>:<span class="str">"jane@techbistro.nl"</span>
-}
-<span class="comment">// Response 201</span>
-{ <span class="key">"id"</span>: <span class="num">501</span>, <span class="key">"name"</span>: <span class="str">"Tech Bistro BV"</span> }</code></pre>
-      </div>
-    </div>
-
-    <div class="full-section">
-      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>POST /kitchens/</div>
-      <div class="panel-body">
-<pre><code>{
-  <span class="key">"name"</span>:                <span class="str">"Tech Bistro BV"</span>,
-  <span class="key">"company"</span>:             <span class="num">501</span>, <span class="comment">// ← company_id</span>
-  <span class="key">"address_1"</span>:           <span class="str">"Keizersgracht 123"</span>,
-  <span class="key">"postal_code"</span>:         <span class="str">"1015 CJ"</span>,
-  <span class="key">"city"</span>:                <span class="str">"Amsterdam"</span>,
-  <span class="key">"country"</span>:             <span class="str">"NL"</span>,
-  <span class="key">"contact_person_name"</span>: <span class="str">"Jane De Vries"</span>,
-  <span class="key">"phone_number"</span>:        <span class="str">"+31612345678"</span>,
-  <span class="key">"email"</span>:               <span class="str">"jane@techbistro.nl"</span>,
-  <span class="key">"pick_up_time_start"</span>:  <span class="str">"09:00:00"</span>
-}
-<span class="comment">// Response 201</span>
-{ <span class="key">"id"</span>: <span class="num">887</span>, <span class="key">"company"</span>: <span class="num">501</span> }</code></pre>
-      </div>
-    </div>
-
-    <div class="full-section">
-      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>POST /vendors/ <span class="badge badge-new">NEW</span></div>
-      <div class="panel-body">
-<pre><code>{
-  <span class="key">"name"</span>:    <span class="str">"Tech Bistro BV"</span>,
-  <span class="key">"kitchen"</span>: <span class="num">887</span>, <span class="comment">// ← kitchen_id</span>
-  <span class="key">"description"</span>:
-    <span class="str">""</span>,     <span class="comment">// empty default</span>
-  <span class="key">"minimum_order_value_delivery"</span>:
-    <span class="num">0</span>      <span class="comment">// default, ops sets later</span>
-}
-<span class="comment">// Response 201</span>
-{
-  <span class="key">"id"</span>:      <span class="num">334</span>,
-  <span class="key">"kitchen"</span>: <span class="num">887</span>
-}</code></pre>
-        <div class="callout warn" style="margin-top:0.75rem;"><span class="callout-icon">⚠</span><span>Images (<code>main_image</code>, <code>secondary_image</code>) must be optional. If currently required in Django, this endpoint will return 400 until fixed.</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="callout danger"><span class="callout-icon">!</span><div><strong>Sequential dependency:</strong> kitchen creation requires <code>company_id</code>; vendor creation requires <code>kitchen_id</code>. Do NOT run these in parallel. On partial failure, store whichever IDs were returned and retry only the failed call on the next "Continue" click.</div></div>
   <div class="bdd-section">
     <div class="bdd-section-title">↗ BDD Scenarios — <a href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank">see PRD</a></div>
     <div class="bdd-cards">
-      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-3</span><span class="bdd-name">Successful Step 2 submission</span></a>
-      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-4</span><span class="bdd-name">Kitchen fails after company succeeds</span></a>
-      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-5</span><span class="bdd-name">Idempotent retry — company already exists</span></a>
-      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-6</span><span class="bdd-name">Multiple locations</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-1</span><span class="bdd-name">Successful Step 1 submission</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-2</span><span class="bdd-name">Email already registered in Firebase</span></a>
     </div>
   </div>
 </div>
@@ -559,6 +490,7 @@ PATCH /registrations/reg-8821/
 
 <!-- STEP 4 -->
 <div class="step-content" id="step-3">
+  <div class="callout danger" style="margin-bottom:1.5rem;"><span class="callout-icon">⏸</span><div><strong>DEFERRED — Removed from onboarding flow.</strong> Stripe Connect (merchant payout account setup) will not be part of the initial launch. This tab is kept for reference. See the PRD "Deferred" section for BDD scenarios and checklist items.</div></div>
   <p class="section-title">Merchant clicks "Connect with Stripe" — Django generates the Connect onboarding URL</p>
 
   <div class="api-calls">
@@ -919,6 +851,353 @@ PATCH /registrations/reg-8821/
   </div>
 </div>
 
+<!-- STEP 6 — Commerce -->
+<div class="step-content" id="step-6">
+  <p class="section-title">Merchant enters VAT/KvK, answers commerce questions, clicks "Continue" — three sequential Django calls to create company, kitchen, vendor</p>
+
+  <div class="flow">
+    <div class="panel fe">
+      <div class="panel-header"><span class="dot"></span>Frontend form data (raw)</div>
+      <div class="panel-body">
+<pre><code><span class="comment">// Step3Commerce.tsx
+// RegistrationContext.company + commerce</span>
+
+<span class="comment">// Commerce question</span>
+<span class="key">selling_for_this_business_only</span>: <span class="num">true</span>
+
+<span class="comment">// Business details card</span>
+<span class="key">vat_number</span>: <span class="str">"NL123456789B01"</span>
+<span class="comment">// Required. Live validation via</span>
+<span class="comment">// Supabase validate-vat edge fn.</span>
+<span class="key">chamber_of_commerce_number</span>:
+            <span class="str">"12345678"</span>
+<span class="comment">// Optional (KvK)</span>
+
+<span class="comment">// From Company Info step (draft)</span>
+<span class="key">legal_name</span>:    <span class="str">"Tech Bistro BV"</span>
+<span class="key">address_line1</span>: <span class="str">"Keizersgracht 123"</span>
+<span class="key">postal_code</span>:   <span class="str">"1015 CJ"</span>
+<span class="key">city</span>:          <span class="str">"Amsterdam"</span>
+<span class="key">country</span>:       <span class="str">"NL"</span>
+<span class="key">business_type</span>: <span class="str">"restaurant"</span>
+
+<span class="comment">// From Step 1</span>
+<span class="key">first_name</span>: <span class="str">"Jane"</span>
+<span class="key">last_name</span>:  <span class="str">"De Vries"</span>
+<span class="key">email</span>:      <span class="str">"jane@techbistro.nl"</span>
+<span class="key">phone</span>:      <span class="str">"+31612345678"</span></code></pre>
+        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">ℹ</span><span>VAT number is live-validated via <code>validate-vat</code> Supabase edge function as the merchant types. This can stay Supabase — it's a UI validation helper, not data persistence.</span></div>
+      </div>
+    </div>
+
+    <div class="arrow-col">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </div>
+
+    <div class="panel" style="border-color:var(--stripe-border);">
+      <div class="panel-header" style="background:var(--stripe-bg);color:var(--stripe);"><span class="dot" style="background:var(--stripe)"></span>Transformation &amp; idempotency</div>
+      <div class="panel-body">
+<pre><code><span class="comment">// 1. Refresh Firebase token</span>
+token = getIdToken(<span class="num">true</span>)
+
+<span class="comment">// 2. Idempotency checks</span>
+<span class="key">if</span> (localStorage.company_id) {
+  <span class="comment">// skip POST /companies/</span>
+}
+<span class="key">if</span> (localStorage.kitchen_id) {
+  <span class="comment">// skip POST /kitchens/</span>
+}
+<span class="key">if</span> (localStorage.vendor_id) {
+  <span class="comment">// skip POST /vendors/</span>
+}
+
+<span class="comment">// 3. Slug derivation</span>
+slug = slugify(legal_name)
+<span class="comment">// "Tech Bistro BV" → "tech-bistro-bv"</span>
+
+<span class="comment">// 4. Contact person name</span>
+contact_person_name =
+  first_name + " " + last_name
+<span class="comment">// → "Jane De Vries"</span>
+
+<span class="comment">// 5. Phone number</span>
+phone = phone_country_code
+      + phone_number
+<span class="comment">// → "+31612345678"</span>
+
+<span class="comment">// 6. Default values</span>
+pick_up_time_start = <span class="str">"09:00:00"</span>
+description        = <span class="str">""</span>
+min_order_value    = <span class="num">0</span></code></pre>
+      </div>
+    </div>
+
+    <div class="arrow-col">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </div>
+
+    <div class="panel dj">
+      <div class="panel-header"><span class="dot"></span>Django API chain</div>
+      <div class="panel-body">
+<pre><code><span class="comment">// 1. Create company → get company_id</span>
+POST /companies/
+<span class="comment">// → { id: 501 }</span>
+
+<span class="comment">// 2. Create kitchen → get kitchen_id</span>
+<span class="comment">//    (needs company_id from step 1)</span>
+POST /kitchens/
+<span class="comment">// → { id: 887 }</span>
+
+<span class="comment">// 3. Create vendor → get vendor_id</span>
+<span class="comment">//    (needs kitchen_id from step 2)</span>
+POST /vendors/
+<span class="comment">// → { id: 334 }</span>
+
+<span class="comment">// 4. Record progress (Phase 4)</span>
+PATCH /registrations/reg-8821/
+<span class="comment">// → 200 OK</span></code></pre>
+        <div class="storage-bar" style="margin-top:1rem;">localStorage ← <strong>company_id</strong>: 501 &nbsp;|&nbsp; <strong>kitchen_id</strong>: 887 &nbsp;|&nbsp; <strong>vendor_id</strong>: 334</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="api-calls-3">
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>POST /companies/ <span class="badge badge-new">NEW</span></div>
+      <div class="panel-body">
+<pre><code>{
+  <span class="key">"name"</span>:                <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"invoice_legal_name"</span>:  <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"slug"</span>:                <span class="str">"tech-bistro-bv"</span>,
+  <span class="key">"street"</span>:              <span class="str">"Keizersgracht 123"</span>,
+  <span class="key">"postal_code"</span>:         <span class="str">"1015 CJ"</span>,
+  <span class="key">"city"</span>:                <span class="str">"Amsterdam"</span>,
+  <span class="key">"country"</span>:             <span class="str">"NL"</span>,
+  <span class="key">"company_type"</span>:        <span class="str">"restaurant"</span>,
+  <span class="key">"vat_number"</span>:          <span class="str">"NL123456789B01"</span>,
+  <span class="key">"kvk_number"</span>:          <span class="str">"12345678"</span>,
+  <span class="key">"contact_person_name"</span>: <span class="str">"Jane De Vries"</span>,
+  <span class="key">"contact_person_email"</span>:<span class="str">"jane@techbistro.nl"</span>
+}
+<span class="comment">// Response 201</span>
+{ <span class="key">"id"</span>: <span class="num">501</span>, <span class="key">"name"</span>: <span class="str">"Tech Bistro BV"</span> }</code></pre>
+      </div>
+    </div>
+
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>POST /kitchens/</div>
+      <div class="panel-body">
+<pre><code>{
+  <span class="key">"name"</span>:                <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"company"</span>:             <span class="num">501</span>, <span class="comment">// ← company_id</span>
+  <span class="key">"address_1"</span>:           <span class="str">"Keizersgracht 123"</span>,
+  <span class="key">"postal_code"</span>:         <span class="str">"1015 CJ"</span>,
+  <span class="key">"city"</span>:                <span class="str">"Amsterdam"</span>,
+  <span class="key">"country"</span>:             <span class="str">"NL"</span>,
+  <span class="key">"contact_person_name"</span>: <span class="str">"Jane De Vries"</span>,
+  <span class="key">"phone_number"</span>:        <span class="str">"+31612345678"</span>,
+  <span class="key">"email"</span>:               <span class="str">"jane@techbistro.nl"</span>,
+  <span class="key">"pick_up_time_start"</span>:  <span class="str">"09:00:00"</span>
+}
+<span class="comment">// Response 201</span>
+{ <span class="key">"id"</span>: <span class="num">887</span>, <span class="key">"company"</span>: <span class="num">501</span> }</code></pre>
+      </div>
+    </div>
+
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>POST /vendors/ <span class="badge badge-new">NEW</span></div>
+      <div class="panel-body">
+<pre><code>{
+  <span class="key">"name"</span>:    <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"kitchen"</span>: <span class="num">887</span>, <span class="comment">// ← kitchen_id</span>
+  <span class="key">"description"</span>:
+    <span class="str">""</span>,     <span class="comment">// empty default</span>
+  <span class="key">"minimum_order_value_delivery"</span>:
+    <span class="num">0</span>      <span class="comment">// default, ops sets later</span>
+}
+<span class="comment">// Response 201</span>
+{
+  <span class="key">"id"</span>:      <span class="num">334</span>,
+  <span class="key">"kitchen"</span>: <span class="num">887</span>
+}</code></pre>
+        <div class="callout warn" style="margin-top:0.75rem;"><span class="callout-icon">⚠</span><span>Images (<code>main_image</code>, <code>secondary_image</code>) must be optional. If currently required in Django, this endpoint will return 400 until fixed.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout danger"><span class="callout-icon">!</span><div><strong>Sequential dependency:</strong> kitchen creation requires <code>company_id</code>; vendor creation requires <code>kitchen_id</code>. Do NOT run these in parallel. On partial failure, store whichever IDs were returned and retry only the failed call on the next "Continue" click.</div></div>
+  <div class="bdd-section">
+    <div class="bdd-section-title">↗ BDD Scenarios — <a href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank">see PRD</a></div>
+    <div class="bdd-cards">
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-3</span><span class="bdd-name">Successful Commerce step submission</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-4</span><span class="bdd-name">Kitchen fails after company succeeds</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-5</span><span class="bdd-name">Idempotent retry — company already exists</span></a>
+      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-6</span><span class="bdd-name">Multiple locations</span></a>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 7 — Spotlight -->
+<div class="step-content" id="step-7">
+  <p class="section-title">Merchant configures Spotlight — selects prompts, competitors, review platforms — Django persists and syncs to Uberall + CEYO</p>
+
+  <div class="api-calls">
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--frontend-bg);color:var(--frontend);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--frontend)"></span>Screen: Spotlight Form — Collected Data</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Collected in <span class="field fe-field">src/components/registration/Step4Spotlight.tsx</span> + <span class="field fe-field">SpotlightForm.tsx</span></p>
+<pre><code><span class="comment">// RegistrationContext.spotlight</span>
+{
+  <span class="key">"selected_location_name"</span>: <span class="str">"Tech Bistro"</span>,
+  <span class="key">"website_url"</span>:            <span class="str">"https://techbistro.nl"</span>,
+  <span class="key">"primary_category"</span>:       <span class="str">"Restaurant"</span>,
+  <span class="key">"google_business_profile_url"</span>:
+    <span class="str">"https://maps.google.com/..."</span>,
+
+  <span class="comment">// Min 5, max 10 AI prompts selected</span>
+  <span class="key">"target_keywords"</span>: [
+    <span class="str">"Best pasta near Amsterdam"</span>,
+    <span class="str">"Romantic dinner Amsterdam"</span>,
+    <span class="str">"Italian restaurant Jordaan"</span>,
+    <span class="str">"Late night dining Amsterdam"</span>,
+    <span class="str">"Wine and dine Amsterdam"</span>
+  ],
+
+  <span class="comment">// Full AI categorised prompt structure</span>
+  <span class="key">"prompt_categories"</span>: [
+    {
+      <span class="key">"id"</span>: <span class="str">"cuisine"</span>,
+      <span class="key">"label"</span>: <span class="str">"Cuisine &amp; Menu"</span>,
+      <span class="key">"prompts"</span>: [
+        { <span class="key">"text"</span>: <span class="str">"Best pasta near Amsterdam"</span>,
+          <span class="key">"recommended"</span>: <span class="num">true</span> },
+        { <span class="key">"text"</span>: <span class="str">"Italian restaurant Jordaan"</span>,
+          <span class="key">"recommended"</span>: <span class="num">true</span> }
+      ]
+    }
+  ],
+
+  <span class="comment">// Min 2 competitors required</span>
+  <span class="key">"competitors"</span>: [
+    <span class="str">"Toscanini"</span>,
+    <span class="str">"De Italiaan"</span>
+  ],
+
+  <span class="key">"review_platforms"</span>: [
+    <span class="str">"Google"</span>,
+    <span class="str">"TripAdvisor"</span>,
+    <span class="str">"TheFork"</span>
+  ],
+
+  <span class="key">"goals"</span>: [],
+
+  <span class="comment">// Geo data (from Google Place selected)</span>
+  <span class="key">"google_place_id"</span>:           <span class="str">"ChIJ..."</span>,
+  <span class="key">"google_formatted_address"</span>:  <span class="str">"Keizersgracht 123..."</span>,
+  <span class="key">"locations_count"</span>:          <span class="num">1</span>
+}</code></pre>
+        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">ℹ</span><span>AI suggestions (competitors + prompts) are fetched from Supabase <code>suggest-competitors</code> and <code>suggest-prompts</code> edge functions as the merchant types. These are UI-only helpers — they do NOT persist data. Only the final submitted selections go to Django.</span></div>
+      </div>
+    </div>
+
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>Django: POST /spotlight/ <span class="badge badge-new">NEW</span></div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;margin-bottom:0.75rem;"><span class="method post">POST</span><span class="endpoint">/eat-sous/v1/api/spotlight/</span></p>
+<pre><code><span class="comment">// Headers</span>
+<span class="key">Authorization</span>: Bearer eyJhbGci... <span class="comment">// fresh token</span>
+
+<span class="comment">// Request body</span>
+{
+  <span class="key">"registration_id"</span>: <span class="str">"reg-8821"</span>,
+  <span class="key">"legal_name"</span>:       <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"spotlight"</span>: {
+    <span class="key">"selected_location_name"</span>: <span class="str">"Tech Bistro"</span>,
+    <span class="key">"website_url"</span>:  <span class="str">"https://techbistro.nl"</span>,
+    <span class="key">"primary_category"</span>: <span class="str">"Restaurant"</span>,
+    <span class="key">"google_business_profile_url"</span>: <span class="str">"..."</span>,
+    <span class="key">"target_keywords"</span>: [ <span class="str">"Best pasta..."</span>, ... ],
+    <span class="key">"prompt_categories"</span>: [ ... ],
+    <span class="key">"competitors"</span>: [ <span class="str">"Toscanini"</span>, ... ],
+    <span class="key">"review_platforms"</span>: [ <span class="str">"Google"</span>, ... ],
+    <span class="key">"goals"</span>: []
+  },
+  <span class="key">"company"</span>: {
+    <span class="key">"google_place_id"</span>:          <span class="str">"ChIJ..."</span>,
+    <span class="key">"google_formatted_address"</span>: <span class="str">"Keizersgracht 123..."</span>,
+    <span class="key">"address_line1"</span>:            <span class="str">"Keizersgracht 123"</span>,
+    <span class="key">"postal_code"</span>:              <span class="str">"1015 CJ"</span>,
+    <span class="key">"city"</span>:                     <span class="str">"Amsterdam"</span>,
+    <span class="key">"country"</span>:                  <span class="str">"NL"</span>,
+    <span class="key">"lat"</span>:                      <span class="num">52.3676</span>,
+    <span class="key">"lng"</span>:                      <span class="num">4.9041</span>
+  },
+  <span class="key">"zenchef"</span>: <span class="num">false</span>
+}
+
+<span class="comment">// Response 201</span>
+{ <span class="key">"id"</span>: <span class="num">77</span>, <span class="key">"status"</span>: <span class="str">"syncing"</span> }</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="api-calls">
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--storage-bg);color:var(--storage);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--storage)"></span>Django → Uberall: Listing Syndication</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Triggered by Django after Spotlight submission. Syncs business listing to 100+ directories.</p>
+<pre><code><span class="comment">// Fields synced to Uberall</span>
+{
+  <span class="key">"name"</span>:        <span class="str">"Tech Bistro"</span>,
+  <span class="key">"street"</span>:      <span class="str">"Keizersgracht 123"</span>,
+  <span class="key">"zip"</span>:         <span class="str">"1015 CJ"</span>,
+  <span class="key">"city"</span>:        <span class="str">"Amsterdam"</span>,
+  <span class="key">"country"</span>:     <span class="str">"NL"</span>,
+  <span class="key">"category"</span>:    <span class="str">"Restaurant"</span>,
+  <span class="key">"website"</span>:     <span class="str">"https://techbistro.nl"</span>,
+  <span class="key">"google_maps_url"</span>:
+    <span class="str">"https://maps.google.com/..."</span>,
+  <span class="key">"lat"</span>:         <span class="num">52.3676</span>,
+  <span class="key">"lng"</span>:         <span class="num">4.9041</span>
+}
+<span class="comment">// Platforms: Google, Yelp, TripAdvisor,
+// Bing, Apple Maps, Facebook + 90 more</span></code></pre>
+        <div class="callout warn" style="margin-top:0.75rem;"><span class="callout-icon">⚠</span><span><strong>Open question:</strong> Confirm Uberall API credentials and whether a Django Uberall integration module already exists.</span></div>
+      </div>
+    </div>
+
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--stripe-bg);color:var(--stripe);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--stripe)"></span>Django → CEYO: AI Prompt Tracking</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Triggered by Django after Spotlight submission. Pushes AI prompt data for LLM ranking.</p>
+<pre><code><span class="comment">// Fields pushed to CEYO</span>
+{
+  <span class="key">"business_name"</span>: <span class="str">"Tech Bistro"</span>,
+  <span class="key">"target_keywords"</span>: [
+    <span class="str">"Best pasta near Amsterdam"</span>,
+    <span class="str">"Romantic dinner Amsterdam"</span>,
+    ...
+  ],
+  <span class="key">"prompt_categories"</span>: [
+    {
+      <span class="key">"id"</span>: <span class="str">"cuisine"</span>,
+      <span class="key">"prompts"</span>: [ ... ]
+    }
+  ],
+  <span class="key">"review_platforms"</span>: [
+    <span class="str">"Google"</span>, <span class="str">"TripAdvisor"</span>
+  ]
+}
+<span class="comment">// Used for: AI platform rankings,
+// LLM mention tracking, prompt optimisation</span></code></pre>
+        <div class="callout warn" style="margin-top:0.75rem;"><span class="callout-icon">⚠</span><span><strong>Open question:</strong> Confirm CEYO API credentials and endpoint. Confirm whether integration exists in Django or needs to be built.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout info"><span class="callout-icon">ℹ</span><span>Uberall and CEYO sync run asynchronously after Django receives the Spotlight submission. Failures are logged and retried — the merchant advances to the next step immediately regardless of sync outcome.</span></div>
+</div>
+
 </div>
 <script>
 function showStep(i) {
@@ -927,7 +1206,14 @@ function showStep(i) {
   for (var c = 0; c < contents.length; c++) contents[c].classList.remove('visible');
   for (var b = 0; b < buttons.length; b++) buttons[b].classList.remove('active');
   document.getElementById('step-' + i).classList.add('visible');
-  buttons[i].classList.add('active');
+  // Find which button triggers this step and mark it active
+  for (var b2 = 0; b2 < buttons.length; b2++) {
+    var onclick = buttons[b2].getAttribute('onclick');
+    if (onclick && onclick.indexOf('showStep(' + i + ')') !== -1) {
+      buttons[b2].classList.add('active');
+      break;
+    }
+  }
 }
 </script>
 </body>
