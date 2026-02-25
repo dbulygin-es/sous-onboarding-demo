@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOUS Onboarding: Frontend → Django Data Mapping (PAT-573)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222633;
+    --border: #2d3348;
+    --text: #e2e4ed;
+    --text-muted: #8b90a5;
+    --frontend: #60a5fa;
+    --frontend-bg: rgba(96,165,250,0.08);
+    --frontend-border: rgba(96,165,250,0.25);
+    --firebase: #fbbf24;
+    --firebase-bg: rgba(251,191,36,0.08);
+    --firebase-border: rgba(251,191,36,0.25);
+    --django: #4ade80;
+    --django-bg: rgba(74,222,128,0.08);
+    --django-border: rgba(74,222,128,0.25);
+    --stripe: #a78bfa;
+    --stripe-bg: rgba(167,139,250,0.08);
+    --stripe-border: rgba(167,139,250,0.25);
+    --hubspot: #fb923c;
+    --hubspot-bg: rgba(251,146,60,0.08);
+    --hubspot-border: rgba(251,146,60,0.25);
+    --storage: #38bdf8;
+    --storage-bg: rgba(56,189,248,0.08);
+    --storage-border: rgba(56,189,248,0.25);
+    --warn: #fbbf24;
+    --warn-bg: rgba(251,191,36,0.08);
+    --success: #34d399;
+    --code-bg: #161821;
+    --arrow: #4b5078;
+    --red: #f87171;
+    --red-bg: rgba(248,113,113,0.08);
+    --red-border: rgba(248,113,113,0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; line-height: 1.6; padding: 2rem; min-height: 100vh; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
+  .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem; }
+  .verified-badge { display: inline-flex; align-items: center; gap: 0.35rem; background: var(--django-bg); border: 1px solid var(--django-border); color: var(--django); padding: 0.3rem 0.7rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; margin-bottom: 2rem; }
+  .step-nav { display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+  .step-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; }
+  .step-btn:hover { border-color: var(--stripe-border); color: var(--text); }
+  .step-btn.active { background: var(--stripe-bg); border-color: var(--stripe); color: var(--stripe); }
+  .step-btn.fe.active { background: var(--frontend-bg); border-color: var(--frontend); color: var(--frontend); }
+  .step-btn.dj.active { background: var(--django-bg); border-color: var(--django); color: var(--django); }
+  .step-btn.st.active { background: var(--stripe-bg); border-color: var(--stripe); color: var(--stripe); }
+  .step-btn.hs.active { background: var(--hubspot-bg); border-color: var(--hubspot); color: var(--hubspot); }
+  .step-content { display: none; animation: fadeIn 0.3s ease; }
+  .step-content.visible { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 1rem; align-items: start; margin-bottom: 2rem; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .panel-header { padding: 0.75rem 1rem; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; }
+  .panel-header .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .panel.fe { border-color: var(--frontend-border); }
+  .panel.fe .panel-header { background: var(--frontend-bg); color: var(--frontend); }
+  .panel.fe .dot { background: var(--frontend); }
+  .panel.fb { border-color: var(--firebase-border); }
+  .panel.fb .panel-header { background: var(--firebase-bg); color: var(--firebase); }
+  .panel.fb .dot { background: var(--firebase); }
+  .panel.dj { border-color: var(--django-border); }
+  .panel.dj .panel-header { background: var(--django-bg); color: var(--django); }
+  .panel.dj .dot { background: var(--django); }
+  .panel.st { border-color: var(--stripe-border); }
+  .panel.st .panel-header { background: var(--stripe-bg); color: var(--stripe); }
+  .panel.st .dot { background: var(--stripe); }
+  .panel.hs { border-color: var(--hubspot-border); }
+  .panel.hs .panel-header { background: var(--hubspot-bg); color: var(--hubspot); }
+  .panel.hs .dot { background: var(--hubspot); }
+  .panel-body { padding: 1rem; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 1.7; color: var(--text-muted); }
+  .key { color: #7dd3fc; }
+  .str { color: #86efac; }
+  .num { color: #fbbf24; }
+  .comment { color: #585e78; font-style: italic; }
+  .highlight { color: var(--text); font-weight: 600; }
+  .arrow-col { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; color: var(--arrow); gap: 0.25rem; }
+  .arrow-col svg { opacity: 0.6; }
+  .mapping-table { width: 100%; border-collapse: collapse; }
+  .mapping-table th { text-align: left; padding: 0.5rem 0.75rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; }
+  .mapping-table td { padding: 0.6rem 0.75rem; font-size: 0.8rem; border-bottom: 1px solid rgba(45,51,72,0.5); vertical-align: top; }
+  .mapping-table tr:last-child td { border-bottom: none; }
+  .mapping-table .group-header td { background: var(--surface2); color: var(--text-muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.4rem 0.75rem; }
+  .field { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block; }
+  .field.fe-field { background: var(--frontend-bg); color: var(--frontend); border: 1px solid var(--frontend-border); }
+  .field.fb-field { background: var(--firebase-bg); color: var(--firebase); border: 1px solid var(--firebase-border); }
+  .field.dj-field { background: var(--django-bg); color: var(--django); border: 1px solid var(--django-border); }
+  .field.st-field { background: var(--stripe-bg); color: var(--stripe); border: 1px solid var(--stripe-border); }
+  .field.hs-field { background: var(--hubspot-bg); color: var(--hubspot); border: 1px solid var(--hubspot-border); }
+  .field.storage-field { background: var(--storage-bg); color: var(--storage); border: 1px solid var(--storage-border); }
+  .field.req-field { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .field.new-field { background: var(--django-bg); color: var(--django); border: 1px solid var(--django); font-weight: 600; }
+  .transform-note { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+  .arrow-inline { color: var(--arrow); font-size: 1.1rem; margin: 0 0.25rem; }
+  .callout { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.8rem; margin-top: 1rem; display: flex; gap: 0.5rem; align-items: flex-start; }
+  .callout.warn { background: var(--warn-bg); border: 1px solid rgba(251,191,36,0.25); color: var(--warn); }
+  .callout.info { background: var(--stripe-bg); border: 1px solid var(--stripe-border); color: #c4b5fd; }
+  .callout.success { background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25); color: var(--success); }
+  .callout.danger { background: var(--red-bg); border: 1px solid var(--red-border); color: var(--red); }
+  .callout.storage { background: var(--storage-bg); border: 1px solid var(--storage-border); color: var(--storage); }
+  .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .full-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; }
+  .section-title { font-size: 1rem; font-weight: 600; margin: 2rem 0 0.75rem; color: var(--text); }
+  .section-title:first-child { margin-top: 0; }
+  .api-calls { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+  .api-calls-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+  .endpoint { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; background: var(--code-bg); padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid var(--border); }
+  .method { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.7rem; padding: 0.15rem 0.4rem; border-radius: 3px; margin-right: 0.25rem; }
+  .method.get { background: rgba(52,211,153,0.15); color: var(--success); }
+  .method.post { background: rgba(251,191,36,0.15); color: var(--warn); }
+  .method.patch { background: rgba(167,139,250,0.15); color: var(--stripe); }
+  .storage-bar { background: var(--storage-bg); border: 1px solid var(--storage-border); border-radius: 8px; padding: 0.6rem 0.85rem; font-size: 0.78rem; color: var(--storage); margin-top: 1rem; font-family: 'JetBrains Mono', monospace; }
+  .badge { display: inline-block; font-size: 0.6rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.04em; vertical-align: middle; margin-left: 0.25rem; }
+  .badge-new { background: var(--django-bg); color: var(--django); border: 1px solid var(--django-border); }
+  .badge-req { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  @media (max-width: 900px) {
+    .flow { grid-template-columns: 1fr; }
+    .arrow-col { min-height: auto; padding: 0.5rem; flex-direction: row; }
+    .api-calls, .api-calls-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Data Mapping: SOUS Onboarding Frontend → Django</h1>
+<p class="subtitle">Field-by-field mapping with API payloads for each registration step. Ticket: PAT-573.</p>
+<div class="verified-badge">✓ Verified against Django OpenAPI spec (eat-sous v1) + frontend codebase (sous-onboard-flow)</div>
+
+<div class="step-nav">
+  <button class="step-btn fe active" onclick="showStep(0)">1. Account &amp; Contact</button>
+  <button class="step-btn dj" onclick="showStep(1)">2. Company Info</button>
+  <button class="step-btn st" onclick="showStep(2)">3. Subscription</button>
+  <button class="step-btn st" onclick="showStep(3)">4. Stripe Connect</button>
+  <button class="step-btn" onclick="showStep(4)">Full Field Map</button>
+  <button class="step-btn hs" onclick="showStep(5)">HubSpot Sync</button>
+</div>
+
+<!-- STEP 1 -->
+<div class="step-content visible" id="step-0">
+  <p class="section-title">Merchant fills in Account &amp; Contact, clicks "Continue" — Firebase runs first, Django second</p>
+
+  <div class="api-calls">
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--frontend-bg);color:var(--frontend);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--frontend)"></span>Screen: Account &amp; Contact — Form Fields</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Merchant fills in and clicks <strong style="color:var(--text);">"Continue"</strong></p>
+<pre><code><span class="comment">// RegistrationContext state (src/context/RegistrationContext.tsx)</span>
+{
+  <span class="key">"user"</span>: {
+    <span class="key">"first_name"</span>:        <span class="str highlight">"Jane"</span>,
+    <span class="key">"last_name"</span>:         <span class="str highlight">"De Vries"</span>,
+    <span class="key">"email"</span>:             <span class="str highlight">"jane@techbistro.nl"</span>,
+    <span class="key">"password"</span>:          <span class="str highlight">"••••••••"</span>,    <span class="comment">// never stored after use</span>
+    <span class="key">"phone_country_code"</span>: <span class="str highlight">"+31"</span>,
+    <span class="key">"phone_number"</span>:       <span class="str highlight">"612345678"</span>
+  }
+}</code></pre>
+        <div class="callout info"><span class="callout-icon">ℹ</span><span>Password is consumed by Firebase only. It is never sent to Django and never stored in localStorage.</span></div>
+        <div class="callout warn" style="margin-top:0.5rem;"><span class="callout-icon">⚠</span><div><strong>ToS &amp; Privacy Policy consent</strong> is collected on this screen via a required checkbox. Three values must be recorded:<br><br>
+          <span class="field fe-field">tos_agreed</span> — boolean, must be <code>true</code> to proceed<br>
+          <span class="field fe-field">tos_agreed_at</span> — ISO 8601 timestamp, set client-side at moment of checkbox tick<br>
+          <span class="field fe-field">tos_agreed_ip</span> — see open question below
+        </div></div>
+        <div class="callout danger" style="margin-top:0.5rem;"><span class="callout-icon">!</span><div><strong>Open question — IP address capture:</strong> Two options:<br><br>
+          <strong>Option A (recommended):</strong> Django reads <code>REMOTE_ADDR</code> / <code>X-Forwarded-For</code> from the request server-side. More reliable, cannot be spoofed by the client. No extra frontend work.<br><br>
+          <strong>Option B:</strong> Frontend fetches the user's IP (e.g. via <code>api.ipify.org</code>) and sends it as <code>tos_agreed_ip</code> in the request body. Simpler but the value can be manipulated.<br><br>
+          Team needs to decide before implementation. Option A is strongly preferred for legal/compliance purposes.
+        </div></div>
+      </div>
+    </div>
+
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--firebase-bg);color:var(--firebase);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--firebase)"></span>Firebase SDK — Create Account</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Called in <span class="field fb-field">src/lib/firebase-auth.ts</span></p>
+<pre><code><span class="comment">// 1. Create Firebase account</span>
+createUserWithEmailAndPassword(
+  firebaseAuth,
+  <span class="str">"jane@techbistro.nl"</span>,
+  <span class="str">"Secr3t!"</span>
+)
+<span class="comment">// → UserCredential</span>
+{
+  <span class="key">"uid"</span>:   <span class="str highlight">"abc123xyz456"</span>,
+  <span class="key">"email"</span>: <span class="str">"jane@techbistro.nl"</span>
+}
+
+<span class="comment">// 2. Get ID token for Django</span>
+getIdToken(<span class="comment">/* forceRefresh */</span> <span class="num">false</span>)
+<span class="comment">// → "eyJhbGciOiJSUzI1NiIsImtpZCI6..."</span></code></pre>
+        <div class="callout warn"><span class="callout-icon">⚠</span><span>If Firebase throws <code>auth/email-already-in-use</code>, show "An account with this email already exists." No Django calls are made.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="full-section">
+    <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>Django: POST /signup-with-sso/ — Create Django User</div>
+    <div class="panel-body">
+      <p style="font-size:0.8rem;margin-bottom:0.75rem;"><span class="method post">POST</span><span class="endpoint">/eat-sous/v1/api/signup-with-sso/</span></p>
+<pre><code><span class="comment">// Headers</span>
+<span class="key">Authorization</span>: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6...
+<span class="key">Content-Type</span>: application/json
+
+<span class="comment">// Request body</span>
+{
+  <span class="key">"firebase_uid"</span>: <span class="str">"abc123xyz456"</span>,
+  <span class="key">"first_name"</span>:   <span class="str">"Jane"</span>,
+  <span class="key">"last_name"</span>:    <span class="str">"De Vries"</span>,
+  <span class="key">"email"</span>:        <span class="str">"jane@techbistro.nl"</span>,
+  <span class="key">"phone"</span>:        <span class="str">"+31612345678"</span>,   <span class="comment">// country_code + number concatenated</span>
+  <span class="key">"tos_agreed"</span>:    <span class="num">true</span>,
+  <span class="key">"tos_agreed_at"</span>: <span class="str">"2026-02-25T14:32:10Z"</span>,  <span class="comment">// client-side UTC timestamp</span>
+  <span class="key">"tos_agreed_ip"</span>: <span class="str">"203.0.113.42"</span>   <span class="comment">// see open question re: capture method</span>
+}
+
+<span class="comment">// Response 201 Created</span>
+{
+  <span class="key">"id"</span>:         <span class="num highlight">1042</span>,
+  <span class="key">"email"</span>:      <span class="str">"jane@techbistro.nl"</span>,
+  <span class="key">"first_name"</span>: <span class="str">"Jane"</span>,
+  <span class="key">"last_name"</span>:  <span class="str">"De Vries"</span>
+}</code></pre>
+      <div class="storage-bar">localStorage ← <strong>django_user_id</strong>: 1042</div>
+      <div class="callout success"><span class="callout-icon">✓</span><span>Idempotency: if <code>django_user_id</code> already exists in localStorage, skip this call entirely. Use the stored ID for all subsequent requests.</span></div>
+    </div>
+  </div>
+
+  <div class="full-section">
+    <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>Django: POST /registrations/ — Create Draft <span class="badge badge-new">Phase 4</span></div>
+    <div class="panel-body">
+      <p style="font-size:0.8rem;margin-bottom:0.75rem;"><span class="method post">POST</span><span class="endpoint">/eat-sous/v1/api/registrations/</span></p>
+<pre><code><span class="comment">// Request body</span>
+{
+  <span class="key">"firebase_uid"</span>: <span class="str">"abc123xyz456"</span>,
+  <span class="key">"step"</span>:         <span class="str">"account"</span>,
+  <span class="key">"utm_source"</span>:   <span class="str">"google"</span>,     <span class="comment">// from URL params if present</span>
+  <span class="key">"utm_medium"</span>:   <span class="str">"cpc"</span>,
+  <span class="key">"utm_campaign"</span>: <span class="str">"nl-restaurants-q1"</span>
+}
+
+<span class="comment">// Response 201 Created</span>
+{
+  <span class="key">"id"</span>:     <span class="str highlight">"reg-8821"</span>,
+  <span class="key">"status"</span>: <span class="str">"in_progress"</span>,
+  <span class="key">"step"</span>:   <span class="str">"account"</span>
+}</code></pre>
+      <div class="storage-bar">localStorage ← <strong>registration_id</strong>: "reg-8821"</div>
+      <div class="callout info"><span class="callout-icon">ℹ</span><span>Phase 4 only. If this endpoint doesn't exist yet, skip it — all other steps work without it. The registration draft enables cross-device resume.</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 2 -->
+<div class="step-content" id="step-1">
+  <p class="section-title">Merchant completes company screens (2a → 2b → 2c), clicks "Continue" — three sequential Django calls</p>
+
+  <div class="flow">
+    <div class="panel fe">
+      <div class="panel-header"><span class="dot"></span>Frontend form data (raw)</div>
+      <div class="panel-body">
+<pre><code><span class="comment">// Screens 2a + 2b + 2c combined</span>
+<span class="comment">// (RegistrationContext.company)</span>
+
+<span class="key">business_structure</span>: <span class="str">"corporate"</span>
+<span class="key">business_type</span>:      <span class="str">"restaurant"</span>
+
+<span class="key">legal_name</span>:    <span class="str">"Tech Bistro BV"</span>
+<span class="key">address_line1</span>: <span class="str">"Keizersgracht 123"</span>
+<span class="key">postal_code</span>:   <span class="str">"1015 CJ"</span>
+<span class="key">city</span>:          <span class="str">"Amsterdam"</span>
+<span class="key">country</span>:       <span class="str">"NL"</span>
+
+<span class="key">vat_number</span>: <span class="str">"NL123456789B01"</span>
+<span class="key">chamber_of_commerce_number</span>:
+            <span class="str">"12345678"</span>
+
+<span class="key">additional_locations</span>: <span class="num">[]</span>
+
+<span class="comment">// From Step 1 (RegistrationContext.user)</span>
+<span class="key">first_name</span>: <span class="str">"Jane"</span>
+<span class="key">last_name</span>:  <span class="str">"De Vries"</span>
+<span class="key">email</span>:      <span class="str">"jane@techbistro.nl"</span>
+<span class="key">phone</span>:      <span class="str">"+31612345678"</span></code></pre>
+      </div>
+    </div>
+
+    <div class="arrow-col">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </div>
+
+    <div class="panel" style="border-color:var(--stripe-border);">
+      <div class="panel-header" style="background:var(--stripe-bg);color:var(--stripe);"><span class="dot" style="background:var(--stripe)"></span>Transformation &amp; idempotency</div>
+      <div class="panel-body">
+<pre><code><span class="comment">// 1. Refresh Firebase token</span>
+token = getIdToken(<span class="num">true</span>)
+
+<span class="comment">// 2. Idempotency checks</span>
+<span class="key">if</span> (localStorage.company_id) {
+  <span class="comment">// skip POST /companies/</span>
+}
+<span class="key">if</span> (localStorage.kitchen_id) {
+  <span class="comment">// skip POST /kitchens/</span>
+}
+<span class="key">if</span> (localStorage.vendor_id) {
+  <span class="comment">// skip POST /vendors/</span>
+}
+
+<span class="comment">// 3. Slug derivation</span>
+slug = slugify(legal_name)
+<span class="comment">// "Tech Bistro BV" → "tech-bistro-bv"</span>
+
+<span class="comment">// 4. Contact person name</span>
+contact_person_name =
+  first_name + " " + last_name
+<span class="comment">// → "Jane De Vries"</span>
+
+<span class="comment">// 5. Phone number</span>
+phone = phone_country_code
+      + phone_number
+<span class="comment">// → "+31612345678"</span>
+
+<span class="comment">// 6. Default values</span>
+pick_up_time_start = <span class="str">"09:00:00"</span>
+description        = <span class="str">""</span>
+min_order_value    = <span class="num">0</span></code></pre>
+      </div>
+    </div>
+
+    <div class="arrow-col">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </div>
+
+    <div class="panel dj">
+      <div class="panel-header"><span class="dot"></span>Django API chain</div>
+      <div class="panel-body">
+<pre><code><span class="comment">// 1. Create company → get company_id</span>
+POST /companies/
+<span class="comment">// → { id: 501 }</span>
+
+<span class="comment">// 2. Create kitchen → get kitchen_id</span>
+<span class="comment">//    (needs company_id from step 1)</span>
+POST /kitchens/
+<span class="comment">// → { id: 887 }</span>
+
+<span class="comment">// 3. Create vendor → get vendor_id</span>
+<span class="comment">//    (needs kitchen_id from step 2)</span>
+POST /vendors/
+<span class="comment">// → { id: 334 }</span>
+
+<span class="comment">// 4. Record progress (Phase 4)</span>
+PATCH /registrations/reg-8821/
+<span class="comment">// → 200 OK</span></code></pre>
+        <div class="storage-bar" style="margin-top:1rem;">localStorage ← <strong>company_id</strong>: 501 &nbsp;|&nbsp; <strong>kitchen_id</strong>: 887 &nbsp;|&nbsp; <strong>vendor_id</strong>: 334</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="api-calls-3">
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>POST /companies/ <span class="badge badge-new">NEW</span></div>
+      <div class="panel-body">
+<pre><code>{
+  <span class="key">"name"</span>:                <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"invoice_legal_name"</span>:  <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"slug"</span>:                <span class="str">"tech-bistro-bv"</span>,
+  <span class="key">"street"</span>:              <span class="str">"Keizersgracht 123"</span>,
+  <span class="key">"postal_code"</span>:         <span class="str">"1015 CJ"</span>,
+  <span class="key">"city"</span>:                <span class="str">"Amsterdam"</span>,
+  <span class="key">"country"</span>:             <span class="str">"NL"</span>,
+  <span class="key">"company_type"</span>:        <span class="str">"restaurant"</span>,
+  <span class="key">"vat_number"</span>:          <span class="str">"NL123456789B01"</span>,
+  <span class="key">"kvk_number"</span>:          <span class="str">"12345678"</span>,
+  <span class="key">"contact_person_name"</span>: <span class="str">"Jane De Vries"</span>,
+  <span class="key">"contact_person_email"</span>:<span class="str">"jane@techbistro.nl"</span>
+}
+<span class="comment">// Response 201</span>
+{ <span class="key">"id"</span>: <span class="num">501</span>, <span class="key">"name"</span>: <span class="str">"Tech Bistro BV"</span> }</code></pre>
+      </div>
+    </div>
+
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>POST /kitchens/</div>
+      <div class="panel-body">
+<pre><code>{
+  <span class="key">"name"</span>:                <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"company"</span>:             <span class="num">501</span>, <span class="comment">// ← company_id</span>
+  <span class="key">"address_1"</span>:           <span class="str">"Keizersgracht 123"</span>,
+  <span class="key">"postal_code"</span>:         <span class="str">"1015 CJ"</span>,
+  <span class="key">"city"</span>:                <span class="str">"Amsterdam"</span>,
+  <span class="key">"country"</span>:             <span class="str">"NL"</span>,
+  <span class="key">"contact_person_name"</span>: <span class="str">"Jane De Vries"</span>,
+  <span class="key">"phone_number"</span>:        <span class="str">"+31612345678"</span>,
+  <span class="key">"email"</span>:               <span class="str">"jane@techbistro.nl"</span>,
+  <span class="key">"pick_up_time_start"</span>:  <span class="str">"09:00:00"</span>
+}
+<span class="comment">// Response 201</span>
+{ <span class="key">"id"</span>: <span class="num">887</span>, <span class="key">"company"</span>: <span class="num">501</span> }</code></pre>
+      </div>
+    </div>
+
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>POST /vendors/ <span class="badge badge-new">NEW</span></div>
+      <div class="panel-body">
+<pre><code>{
+  <span class="key">"name"</span>:    <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"kitchen"</span>: <span class="num">887</span>, <span class="comment">// ← kitchen_id</span>
+  <span class="key">"description"</span>:
+    <span class="str">""</span>,     <span class="comment">// empty default</span>
+  <span class="key">"minimum_order_value_delivery"</span>:
+    <span class="num">0</span>      <span class="comment">// default, ops sets later</span>
+}
+<span class="comment">// Response 201</span>
+{
+  <span class="key">"id"</span>:      <span class="num">334</span>,
+  <span class="key">"kitchen"</span>: <span class="num">887</span>
+}</code></pre>
+        <div class="callout warn" style="margin-top:0.75rem;"><span class="callout-icon">⚠</span><span>Images (<code>main_image</code>, <code>secondary_image</code>) must be optional. If currently required in Django, this endpoint will return 400 until fixed.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout danger"><span class="callout-icon">!</span><div><strong>Sequential dependency:</strong> kitchen creation requires <code>company_id</code>; vendor creation requires <code>kitchen_id</code>. Do NOT run these in parallel. On partial failure, store whichever IDs were returned and retry only the failed call on the next "Continue" click.</div></div>
+</div>
+
+<!-- STEP 3 -->
+<div class="step-content" id="step-2">
+  <p class="section-title">Merchant selects plan and billing period, clicks "Subscribe" — Django generates the Stripe redirect URL</p>
+
+  <div class="api-calls">
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--frontend-bg);color:var(--frontend);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--frontend)"></span>Screen: Plan Selection — Form Fields</div>
+      <div class="panel-body">
+<pre><code><span class="comment">// RegistrationContext state</span>
+{
+  <span class="key">"selectedPlan"</span>:    <span class="str highlight">"launch"</span>,  <span class="comment">// launch | grow | scale</span>
+  <span class="key">"billingPeriod"</span>:   <span class="str highlight">"monthly"</span> <span class="comment">// monthly | yearly</span>
+}
+<span class="comment">// Merchant clicks "Subscribe"</span></code></pre>
+        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">ℹ</span><span>The plan/billing selection lives in <span class="field fe-field">src/components/registration/Step3Pricing.tsx</span>. Currently calls Supabase directly — replace with <span class="field dj-field">POST /stripe/checkout/</span>.</span></div>
+      </div>
+    </div>
+
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>Django: POST /stripe/checkout/</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;margin-bottom:0.75rem;"><span class="method post">POST</span><span class="endpoint">/eat-sous/v1/api/stripe/checkout/</span></p>
+<pre><code><span class="comment">// Headers</span>
+<span class="key">Authorization</span>: Bearer eyJhbGci... <span class="comment">// fresh token</span>
+
+<span class="comment">// Request body</span>
+{
+  <span class="key">"plan"</span>:           <span class="str">"launch"</span>,
+  <span class="key">"billing_period"</span>: <span class="str">"monthly"</span>,
+  <span class="key">"vendor_id"</span>:      <span class="num">334</span>  <span class="comment">// from localStorage</span>
+}
+
+<span class="comment">// Response 201</span>
+{
+  <span class="key">"checkout_url"</span>: <span class="str">"https://checkout.stripe.com/c/pay/cs_live_a1b2..."</span>,
+  <span class="key">"session_id"</span>:   <span class="str">"cs_live_a1b2c3d4e5"</span>
+}</code></pre>
+        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">→</span><span>Frontend immediately redirects browser to <code>checkout_url</code>. Stripe handles payment UI.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="api-calls">
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--stripe-bg);color:var(--stripe);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--stripe)"></span>Stripe → Django: POST /stripe/webhook/ (server-side)</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Stripe fires this independently of the browser after payment is confirmed.</p>
+<pre><code><span class="comment">// Stripe webhook payload</span>
+{
+  <span class="key">"type"</span>: <span class="str">"checkout.session.completed"</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"object"</span>: {
+      <span class="key">"id"</span>:             <span class="str">"cs_live_a1b2c3d4e5"</span>,
+      <span class="key">"payment_status"</span>: <span class="str">"paid"</span>,
+      <span class="key">"subscription"</span>:   <span class="str">"sub_1NkQzBPwXy9876"</span>,
+      <span class="key">"customer"</span>:       <span class="str">"cus_Abc123"</span>
+    }
+  }
+}
+<span class="comment">// Django responds 200 OK</span></code></pre>
+        <div class="callout warn"><span class="callout-icon">⚠</span><span>Webhook fires asynchronously. The browser redirect back to the app can arrive before the webhook — frontend must not depend on webhook completing before the return URL is processed.</span></div>
+      </div>
+    </div>
+
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--frontend-bg);color:var(--frontend);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--frontend)"></span>Stripe → Frontend: Return URL Handling</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Stripe redirects browser back to the onboarding URL with query params.</p>
+<pre><code><span class="comment">// Success return</span>
+?payment_success=true&session_id=cs_live_a1b2...
+
+<span class="comment">// Detected in RegistrationFlow.tsx</span>
+<span class="key">if</span> (searchParams.get(<span class="str">"payment_success"</span>)) {
+  localStorage.payment_status = <span class="str">"paid"</span>
+  localStorage.session_id     = session_id
+  completeStep(<span class="str">"subscription"</span>)
+}
+
+<span class="comment">// Cancellation return</span>
+?payment_cancelled=true
+
+<span class="key">if</span> (searchParams.get(<span class="str">"payment_cancelled"</span>)) {
+  <span class="comment">// show: "Payment was not completed.</span>
+  <span class="comment">//        Please try again."</span>
+  <span class="comment">// stay on Subscription step</span>
+}</code></pre>
+        <div class="storage-bar" style="margin-top:0.75rem;">localStorage ← <strong>payment_status</strong>: "paid" &nbsp;|&nbsp; <strong>session_id</strong>: "cs_live_a1b2..."</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 4 -->
+<div class="step-content" id="step-3">
+  <p class="section-title">Merchant clicks "Connect with Stripe" — Django generates the Connect onboarding URL</p>
+
+  <div class="api-calls">
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>Django: GET /stripe/onboarding-link/</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;margin-bottom:0.75rem;"><span class="method get">GET</span><span class="endpoint">/eat-sous/v1/api/stripe/onboarding-link/</span></p>
+<pre><code><span class="comment">// Headers only — no request body</span>
+<span class="key">Authorization</span>: Bearer eyJhbGci... <span class="comment">// fresh token</span>
+
+<span class="comment">// Response 200</span>
+{
+  <span class="key">"onboarding_url"</span>: <span class="str">"https://connect.stripe.com/setup/s/acct_1NkQzB..."</span>,
+  <span class="key">"account_id"</span>:     <span class="str">"acct_1NkQzBPwXy9876"</span>
+}</code></pre>
+        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">→</span><span>Frontend immediately redirects browser to <code>onboarding_url</code>. Stripe handles bank account collection.</span></div>
+      </div>
+    </div>
+
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--frontend-bg);color:var(--frontend);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--frontend)"></span>Stripe → Frontend: Return URL Handling</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Stripe redirects back with one of two params depending on outcome.</p>
+<pre><code><span class="comment">// Happy path: onboarding completed</span>
+?connect_return=true
+
+<span class="key">if</span> (searchParams.get(<span class="str">"connect_return"</span>)) {
+  localStorage.stripe_account_id    = <span class="str">"acct_1NkQzBPwXy9876"</span>
+  localStorage.stripe_connect_status = <span class="str">"active"</span>
+  completeStep(<span class="str">"commerce"</span>)
+}
+
+<span class="comment">// Expired link: merchant took too long</span>
+?connect_refresh=true
+
+<span class="key">if</span> (searchParams.get(<span class="str">"connect_refresh"</span>)) {
+  <span class="comment">// Call GET /stripe/onboarding-link/ again</span>
+  <span class="comment">// Redirect to the new URL</span>
+  <span class="comment">// Do NOT show error to merchant</span>
+}</code></pre>
+        <div class="storage-bar" style="margin-top:0.75rem;">localStorage ← <strong>stripe_account_id</strong>: "acct_1Nk..." &nbsp;|&nbsp; <strong>stripe_connect_status</strong>: "active"</div>
+        <div class="callout warn" style="margin-top:0.5rem;"><span class="callout-icon">⚠</span><span><code>connect_refresh</code> means the Stripe link expired (15–30 min timeout). Silently re-fetch and redirect — do NOT show an error message. The merchant will see the same Stripe screen again.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout info"><span class="callout-icon">ℹ</span><span><strong>Current gap:</strong> <code>getStripeConnectOnboardingLink</code> in <span class="field fe-field">src/services/api.ts</span> is never called from any component. The "Connect bank account" screen and its button need to be identified or built. Where it appears in the step flow is an open question for the team.</span></div>
+</div>
+
+<!-- STEP 5 — Full Field Map -->
+<div class="step-content" id="step-4">
+  <p class="section-title" style="margin-top:0;">Complete field mapping — frontend state → Django endpoints</p>
+  <div class="full-section">
+    <div class="panel-header" style="background:var(--surface2);border-bottom:1px solid var(--border);">All mapped fields with source, target, and transformation notes</div>
+    <div class="panel-body" style="padding:0;">
+      <table class="mapping-table">
+        <tr><th>Frontend field</th><th></th><th>Django endpoint / field</th><th>Transform</th></tr>
+
+        <tr class="group-header"><td colspan="4">POST /signup-with-sso/</td></tr>
+        <tr>
+          <td><span class="field fe-field">user.first_name</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">first_name</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">user.last_name</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">last_name</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">user.email</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">email</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field fb-field">firebase_uid</span> <span style="font-size:0.72rem;color:var(--text-muted);">(from Firebase SDK)</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">firebase_uid</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">user.phone_country_code</span> + <span class="field fe-field">user.phone_number</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">phone</span></td>
+          <td style="font-size:0.78rem;">Concatenate: "+31" + "612345678"</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">user.tos_agreed</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field req-field">tos_agreed</span></td>
+          <td style="font-size:0.78rem;">Must be <code>true</code>. Django should reject if missing or false.</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">user.tos_agreed_at</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">tos_agreed_at</span></td>
+          <td style="font-size:0.78rem;">ISO 8601 UTC. Set client-side at checkbox tick.</td>
+        </tr>
+        <tr>
+          <td><span style="font-style:italic;color:var(--text-muted);font-size:0.78rem;">TBD — see open question</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">tos_agreed_ip</span></td>
+          <td style="font-size:0.78rem;"><strong>Option A (recommended):</strong> Django reads from <code>REMOTE_ADDR</code> / <code>X-Forwarded-For</code>. <strong>Option B:</strong> frontend sends as request body field. Team to decide.</td>
+        </tr>
+
+        <tr class="group-header"><td colspan="4">POST /companies/ <span class="badge badge-new">NEW</span></td></tr>
+        <tr>
+          <td><span class="field fe-field">company.legal_name</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">name</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">company.legal_name</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">invoice_legal_name</span></td>
+          <td style="font-size:0.78rem;">Duplicate of name</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">company.legal_name</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">slug</span></td>
+          <td style="font-size:0.78rem;">Slugify: "Tech Bistro BV" → "tech-bistro-bv"</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">company.address_line1</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">street</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">company.postal_code</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">postal_code</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">company.city</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">city</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">company.country</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">country</span></td>
+          <td style="font-size:0.78rem;">Direct copy (2-letter ISO)</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">company.business_type</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">company_type</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">company.vat_number</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">vat_number</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">company.chamber_of_commerce_number</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">kvk_number</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">user.first_name</span> + <span class="field fe-field">user.last_name</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">contact_person_name</span></td>
+          <td style="font-size:0.78rem;">Concatenate with space</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">user.email</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">contact_person_email</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+
+        <tr class="group-header"><td colspan="4">POST /kitchens/</td></tr>
+        <tr>
+          <td><span class="field fe-field">company.legal_name</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">name</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field storage-field">company_id</span> <span style="font-size:0.72rem;color:var(--text-muted);">(from localStorage)</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">company</span></td>
+          <td style="font-size:0.78rem;">FK reference (integer)</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">company.address_line1</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">address_1</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">user.phone_country_code</span> + <span class="field fe-field">user.phone_number</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">phone_number</span></td>
+          <td style="font-size:0.78rem;">Concatenate</td>
+        </tr>
+        <tr>
+          <td><span style="font-style:italic;color:var(--text-muted);font-size:0.78rem;">"09:00:00" (hardcoded)</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field req-field">pick_up_time_start</span></td>
+          <td style="font-size:0.78rem;">Default. Ops adjusts later in Django admin.</td>
+        </tr>
+
+        <tr class="group-header"><td colspan="4">POST /vendors/ <span class="badge badge-new">NEW</span></td></tr>
+        <tr>
+          <td><span class="field fe-field">company.legal_name</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">name</span></td>
+          <td style="font-size:0.78rem;">Direct copy</td>
+        </tr>
+        <tr>
+          <td><span class="field storage-field">kitchen_id</span> <span style="font-size:0.72rem;color:var(--text-muted);">(from localStorage)</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">kitchen</span></td>
+          <td style="font-size:0.78rem;">FK reference (integer)</td>
+        </tr>
+        <tr>
+          <td><span style="font-style:italic;color:var(--text-muted);font-size:0.78rem;">0 (hardcoded)</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">minimum_order_value_delivery</span></td>
+          <td style="font-size:0.78rem;">Default. Ops sets later.</td>
+        </tr>
+
+        <tr class="group-header"><td colspan="4">POST /stripe/checkout/</td></tr>
+        <tr>
+          <td><span class="field fe-field">selectedPlan</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">plan</span></td>
+          <td style="font-size:0.78rem;">Direct copy (launch | grow | scale)</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">billingPeriod</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">billing_period</span></td>
+          <td style="font-size:0.78rem;">Direct copy (monthly | yearly)</td>
+        </tr>
+        <tr>
+          <td><span class="field storage-field">vendor_id</span> <span style="font-size:0.72rem;color:var(--text-muted);">(from localStorage)</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">vendor_id</span></td>
+          <td style="font-size:0.78rem;">FK reference (integer)</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div class="callout success"><span class="callout-icon">✓</span><div>All fields verified against frontend types (<span class="field fe-field">src/types/registration.ts</span>) and Django OpenAPI spec. Fields marked <span class="field req-field">red</span> are required in Django. Fields in <span class="field storage-field">sky blue</span> come from localStorage (set in earlier steps).</div></div>
+</div>
+
+<!-- STEP 6 — HubSpot Sync -->
+<div class="step-content" id="step-5">
+  <p class="section-title">On completion — Django background task (server-side, never from browser)</p>
+  <div class="callout info" style="margin-bottom:1.5rem;"><span class="callout-icon">ℹ</span><span>Triggered when Django marks <code>registration.status = "complete"</code>. The merchant sees the completion screen immediately — HubSpot sync runs asynchronously in a Django task queue. Failures are logged and retried; the merchant is never blocked.</span></div>
+
+  <div class="api-calls-3">
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--hubspot-bg);color:var(--hubspot);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--hubspot)"></span>HubSpot: Create Company</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;margin-bottom:0.75rem;"><span class="method post">POST</span><span class="endpoint">/crm/v3/objects/companies</span></p>
+<pre><code>{
+  <span class="key">"properties"</span>: {
+    <span class="key">"domain"</span>: <span class="str">"techbistro.nl"</span>,
+    <span class="comment">// ↑ extracted from email</span>
+    <span class="key">"name"</span>:   <span class="str">"Tech Bistro BV"</span>,
+    <span class="key">"type"</span>:   <span class="str">"restaurant"</span>,
+    <span class="key">"city"</span>:   <span class="str">"Amsterdam"</span>,
+    <span class="key">"zip"</span>:    <span class="str">"1015 CJ"</span>,
+    <span class="key">"phone"</span>:  <span class="str">"+31612345678"</span>
+  }
+}</code></pre>
+        <div style="margin-top:0.75rem;font-size:0.75rem;color:var(--text-muted);">
+          <div>Domain ← email domain</div>
+          <div>Name ← company.legal_name</div>
+          <div>Type ← company.business_type</div>
+          <div>City ← company.city</div>
+          <div>Zip ← company.postal_code</div>
+          <div>Phone ← user.phone</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--hubspot-bg);color:var(--hubspot);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--hubspot)"></span>HubSpot: Create Deal</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;margin-bottom:0.75rem;"><span class="method post">POST</span><span class="endpoint">/crm/v3/objects/deals</span></p>
+<pre><code>{
+  <span class="key">"properties"</span>: {
+    <span class="key">"dealname"</span>:  <span class="str">"Tech Bistro BV"</span>,
+    <span class="key">"pipeline"</span>:  <span class="str">"sale_pipeline"</span>,
+    <span class="comment">// ↑ confirm HubSpot pipeline ID</span>
+    <span class="key">"dealstage"</span>: <span class="str">"closedwon"</span>,
+    <span class="key">"dealtype"</span>:  <span class="str">"newbusiness"</span>,
+    <span class="key">"package"</span>:   <span class="str">"launch"</span>
+    <span class="comment">// ↑ selected plan</span>
+  }
+}</code></pre>
+        <div style="margin-top:0.75rem;font-size:0.75rem;color:var(--text-muted);">
+          <div>Deal name ← company.legal_name</div>
+          <div>Stage ← always "Closed won"</div>
+          <div>Package ← registration.selected_plan</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="full-section">
+      <div class="panel-header" style="background:var(--hubspot-bg);color:var(--hubspot);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--hubspot)"></span>HubSpot: Create Ticket</div>
+      <div class="panel-body">
+        <p style="font-size:0.8rem;margin-bottom:0.75rem;"><span class="method post">POST</span><span class="endpoint">/crm/v3/objects/tickets</span></p>
+<pre><code>{
+  <span class="key">"properties"</span>: {
+    <span class="key">"subject"</span>:
+      <span class="str">"Tech Bistro BV Onboarding"</span>,
+    <span class="key">"hs_pipeline"</span>:
+      <span class="str">"onboarding_pipeline"</span>,
+    <span class="comment">// ↑ confirm pipeline ID</span>
+    <span class="key">"hs_pipeline_stage"</span>:
+      <span class="str">"new_ticket"</span>,
+    <span class="key">"ticket_type"</span>: <span class="str">"launch"</span>
+    <span class="comment">// ↑ selected plan</span>
+  }
+}</code></pre>
+        <div style="margin-top:0.75rem;font-size:0.75rem;color:var(--text-muted);">
+          <div>Subject ← legal_name + " Onboarding"</div>
+          <div>Pipeline ← Onboarding pipeline</div>
+          <div>Stage ← "New ticket"</div>
+          <div>Ticket type ← registration.selected_plan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout warn"><span class="callout-icon">⚠</span><div><strong>Open questions before implementation:</strong> Confirm exact HubSpot pipeline IDs and stage IDs (need HubSpot account access). Confirm whether a HubSpot integration module already exists in Django or needs to be built from scratch.</div></div>
+  <div class="callout danger" style="margin-top:0.75rem;"><span class="callout-icon">!</span><div><strong>Failure handling:</strong> Log failure with <code>registration_id</code> and retry via Django task queue. Never surface HubSpot errors to the merchant. The merchant's onboarding is complete regardless of HubSpot sync outcome.</div></div>
+</div>
+
+</div>
+<script>
+function showStep(i) {
+  var contents = document.querySelectorAll('.step-content');
+  var buttons = document.querySelectorAll('.step-btn');
+  for (var c = 0; c < contents.length; c++) contents[c].classList.remove('visible');
+  for (var b = 0; b < buttons.length; b++) buttons[b].classList.remove('active');
+  document.getElementById('step-' + i).classList.add('visible');
+  buttons[i].classList.add('active');
+}
+</script>
+</body>
+</html>
