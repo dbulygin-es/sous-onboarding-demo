@@ -281,7 +281,7 @@ getIdToken(<span class="comment">/* forceRefresh */</span> <span class="num">fal
 
 <!-- STEP 2 -->
 <div class="step-content" id="step-1">
-  <p class="section-title">Merchant completes company info screens, clicks "Continue" — data saved to draft. Django calls happen at the Commerce step when VAT/KvK are available.</p>
+  <p class="section-title">Merchant completes company info screens, clicks "Continue" — data saved to draft. Django calls happen at the Commerce step.</p>
 
   <div class="flow">
     <div class="panel fe">
@@ -306,7 +306,7 @@ getIdToken(<span class="comment">/* forceRefresh */</span> <span class="num">fal
 <span class="key">last_name</span>:  <span class="str">"De Vries"</span>
 <span class="key">email</span>:      <span class="str">"jane@techbistro.nl"</span>
 <span class="key">phone</span>:      <span class="str">"+31612345678"</span></code></pre>
-        <div class="callout warn" style="margin-top:0.75rem;"><span class="callout-icon">⚠</span><span><strong>VAT (BTW) and KvK</strong> are collected on the <strong>Commerce step</strong>, not here. POST /companies/ is deferred until the Commerce step when all fields are available.</span></div>
+        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">ℹ</span><span>VAT (BTW) and KvK are <strong>not collected during onboarding</strong> and are not sent to Django.</span></div>
       </div>
     </div>
 
@@ -375,7 +375,7 @@ localStorage.company_draft = {
 <span class="comment">// Phase 4 only:</span>
 PATCH /registrations/reg-8821/
 <span class="comment">// → 200 OK (cross-device resume)</span></code></pre>
-        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">→</span><span>The merchant continues to the Commerce step where VAT/KvK are collected and all three Django records are created.</span></div>
+        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">→</span><span>The merchant continues to the Commerce step where company, kitchen, and vendor records are created in Django.</span></div>
       </div>
     </div>
   </div>
@@ -403,30 +403,28 @@ PATCH /registrations/reg-8821/
   <span class="key">"billingPeriod"</span>:   <span class="str highlight">"monthly"</span> <span class="comment">// monthly | yearly</span>
 }
 <span class="comment">// Merchant clicks "Subscribe"</span></code></pre>
-        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">ℹ</span><span>The plan/billing selection lives in <span class="field fe-field">src/components/registration/Step3Pricing.tsx</span>. Currently calls Supabase directly — replace with <span class="field dj-field">POST /stripe/checkout/</span>.</span></div>
+        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">ℹ</span><span>The plan/billing selection lives in <span class="field fe-field">src/components/registration/Step3Pricing.tsx</span>. No Django checkout endpoint — payments are handled via a Stripe payment link with <code>prefilled_email</code>.</span></div>
       </div>
     </div>
 
     <div class="full-section">
-      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>Django: POST /stripe/checkout/</div>
+      <div class="panel-header" style="background:var(--stripe-bg);color:var(--stripe);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--stripe)"></span>Stripe: Payment Link (no backend call)</div>
       <div class="panel-body">
-        <p style="font-size:0.8rem;margin-bottom:0.75rem;"><span class="method post">POST</span><span class="endpoint">/eat-sous/v1/api/stripe/checkout/</span></p>
-<pre><code><span class="comment">// Headers</span>
-<span class="key">Authorization</span>: Bearer eyJhbGci... <span class="comment">// fresh token</span>
+<pre><code><span class="comment">// Frontend constructs a Stripe payment link URL
+// with merchant email prefilled</span>
 
-<span class="comment">// Request body</span>
-{
-  <span class="key">"plan"</span>:           <span class="str">"launch"</span>,
-  <span class="key">"billing_period"</span>: <span class="str">"monthly"</span>,
-  <span class="key">"vendor_id"</span>:      <span class="num">334</span>  <span class="comment">// from localStorage</span>
-}
+<span class="comment">// Base payment link (configured in Stripe dashboard)</span>
+<span class="key">base_url</span> = <span class="str">"https://buy.stripe.com/&lt;link_id&gt;"</span>
 
-<span class="comment">// Response 201</span>
-{
-  <span class="key">"checkout_url"</span>: <span class="str">"https://checkout.stripe.com/c/pay/cs_live_a1b2..."</span>,
-  <span class="key">"session_id"</span>:   <span class="str">"cs_live_a1b2c3d4e5"</span>
-}</code></pre>
-        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">→</span><span>Frontend immediately redirects browser to <code>checkout_url</code>. Stripe handles payment UI.</span></div>
+<span class="comment">// Append prefilled email so Stripe can
+// match subscription to existing company</span>
+<span class="key">checkout_url</span> = base_url
+  + <span class="str">"?prefilled_email="</span>
+  + encodeURIComponent(merchant_email)
+
+<span class="comment">// Frontend redirects to checkout_url</span>
+<span class="comment">// No Django call needed</span></code></pre>
+        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">ℹ</span><span>Company, kitchen, and vendor records must already exist in Django before opening the payment link, so Stripe can be linked to the correct account by email lookup in the webhook.</span></div>
       </div>
     </div>
   </div>
@@ -438,18 +436,19 @@ PATCH /registrations/reg-8821/
         <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Stripe fires this independently of the browser after payment is confirmed.</p>
 <pre><code><span class="comment">// Stripe webhook payload</span>
 {
-  <span class="key">"type"</span>: <span class="str">"checkout.session.completed"</span>,
+  <span class="key">"type"</span>: <span class="str">"customer.subscription.created"</span>,
   <span class="key">"data"</span>: {
     <span class="key">"object"</span>: {
-      <span class="key">"id"</span>:             <span class="str">"cs_live_a1b2c3d4e5"</span>,
-      <span class="key">"payment_status"</span>: <span class="str">"paid"</span>,
-      <span class="key">"subscription"</span>:   <span class="str">"sub_1NkQzBPwXy9876"</span>,
+      <span class="key">"id"</span>:             <span class="str">"sub_1NkQzBPwXy9876"</span>,
+      <span class="key">"status"</span>:         <span class="str">"active"</span>,
+      <span class="key">"customer_email"</span>: <span class="str">"jane@techbistro.nl"</span>,
       <span class="key">"customer"</span>:       <span class="str">"cus_Abc123"</span>
     }
   }
 }
-<span class="comment">// Django responds 200 OK</span></code></pre>
-        <div class="callout warn"><span class="callout-icon">⚠</span><span>Webhook fires asynchronously. The browser redirect back to the app can arrive before the webhook — frontend must not depend on webhook completing before the return URL is processed.</span></div>
+<span class="comment">// Django looks up vendor by email
+// and links subscription → 200 OK</span></code></pre>
+        <div class="callout warn"><span class="callout-icon">⚠</span><span>Django must link the subscription to the correct vendor/company by <code>customer_email</code>. Confirm this lookup logic exists in the webhook handler.</span></div>
       </div>
     </div>
 
@@ -458,12 +457,11 @@ PATCH /registrations/reg-8821/
       <div class="panel-body">
         <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Stripe redirects browser back to the onboarding URL with query params.</p>
 <pre><code><span class="comment">// Success return</span>
-?payment_success=true&session_id=cs_live_a1b2...
+?payment_success=true
 
 <span class="comment">// Detected in RegistrationFlow.tsx</span>
 <span class="key">if</span> (searchParams.get(<span class="str">"payment_success"</span>)) {
   localStorage.payment_status = <span class="str">"paid"</span>
-  localStorage.session_id     = session_id
   completeStep(<span class="str">"subscription"</span>)
 }
 
@@ -475,7 +473,7 @@ PATCH /registrations/reg-8821/
   <span class="comment">//        Please try again."</span>
   <span class="comment">// stay on Subscription step</span>
 }</code></pre>
-        <div class="storage-bar" style="margin-top:0.75rem;">localStorage ← <strong>payment_status</strong>: "paid" &nbsp;|&nbsp; <strong>session_id</strong>: "cs_live_a1b2..."</div>
+        <div class="storage-bar" style="margin-top:0.75rem;">localStorage ← <strong>payment_status</strong>: "paid"</div>
       </div>
     </div>
   </div>
@@ -654,18 +652,6 @@ PATCH /registrations/reg-8821/
           <td><span class="field fe-field">company.business_type</span></td>
           <td class="arrow-inline">→</td>
           <td><span class="field dj-field">company_type</span></td>
-          <td style="font-size:0.78rem;">Direct copy</td>
-        </tr>
-        <tr>
-          <td><span class="field fe-field">company.vat_number</span></td>
-          <td class="arrow-inline">→</td>
-          <td><span class="field dj-field">vat_number</span></td>
-          <td style="font-size:0.78rem;">Direct copy</td>
-        </tr>
-        <tr>
-          <td><span class="field fe-field">company.chamber_of_commerce_number</span></td>
-          <td class="arrow-inline">→</td>
-          <td><span class="field dj-field">kvk_number</span></td>
           <td style="font-size:0.78rem;">Direct copy</td>
         </tr>
         <tr>
@@ -853,7 +839,7 @@ PATCH /registrations/reg-8821/
 
 <!-- STEP 6 — Commerce -->
 <div class="step-content" id="step-6">
-  <p class="section-title">Merchant enters VAT/KvK, answers commerce questions, clicks "Continue" — three sequential Django calls to create company, kitchen, vendor</p>
+  <p class="section-title">Merchant answers commerce questions, clicks "Continue" — Django calls to create company (once), kitchen (once), vendor (once per location)</p>
 
   <div class="flow">
     <div class="panel fe">
@@ -864,14 +850,6 @@ PATCH /registrations/reg-8821/
 
 <span class="comment">// Commerce question</span>
 <span class="key">selling_for_this_business_only</span>: <span class="num">true</span>
-
-<span class="comment">// Business details card</span>
-<span class="key">vat_number</span>: <span class="str">"NL123456789B01"</span>
-<span class="comment">// Required. Live validation via</span>
-<span class="comment">// Supabase validate-vat edge fn.</span>
-<span class="key">chamber_of_commerce_number</span>:
-            <span class="str">"12345678"</span>
-<span class="comment">// Optional (KvK)</span>
 
 <span class="comment">// From Company Info step (draft)</span>
 <span class="key">legal_name</span>:    <span class="str">"Tech Bistro BV"</span>
@@ -886,7 +864,7 @@ PATCH /registrations/reg-8821/
 <span class="key">last_name</span>:  <span class="str">"De Vries"</span>
 <span class="key">email</span>:      <span class="str">"jane@techbistro.nl"</span>
 <span class="key">phone</span>:      <span class="str">"+31612345678"</span></code></pre>
-        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">ℹ</span><span>VAT number is live-validated via <code>validate-vat</code> Supabase edge function as the merchant types. This can stay Supabase — it's a UI validation helper, not data persistence.</span></div>
+        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">ℹ</span><span>VAT/KvK are not collected during onboarding and are not sent to Django.</span></div>
       </div>
     </div>
 
@@ -943,20 +921,20 @@ min_order_value    = <span class="num">0</span></code></pre>
 POST /companies/
 <span class="comment">// → { id: 501 }</span>
 
-<span class="comment">// 2. Create kitchen → get kitchen_id</span>
+<span class="comment">// 2. Create kitchen once → get kitchen_id</span>
 <span class="comment">//    (needs company_id from step 1)</span>
 POST /kitchens/
 <span class="comment">// → { id: 887 }</span>
 
-<span class="comment">// 3. Create vendor → get vendor_id</span>
+<span class="comment">// 3. Create vendor per location</span>
 <span class="comment">//    (needs kitchen_id from step 2)</span>
-POST /vendors/
-<span class="comment">// → { id: 334 }</span>
+POST /vendors/  <span class="comment">// location 1 → { id: 334 }</span>
+POST /vendors/  <span class="comment">// location 2 → { id: 335 }</span>
 
 <span class="comment">// 4. Record progress (Phase 4)</span>
 PATCH /registrations/reg-8821/
 <span class="comment">// → 200 OK</span></code></pre>
-        <div class="storage-bar" style="margin-top:1rem;">localStorage ← <strong>company_id</strong>: 501 &nbsp;|&nbsp; <strong>kitchen_id</strong>: 887 &nbsp;|&nbsp; <strong>vendor_id</strong>: 334</div>
+        <div class="storage-bar" style="margin-top:1rem;">localStorage ← <strong>company_id</strong>: 501 &nbsp;|&nbsp; <strong>kitchen_id</strong>: 887 &nbsp;|&nbsp; <strong>vendor_ids</strong>: [334, 335, ...]</div>
       </div>
     </div>
   </div>
@@ -974,8 +952,6 @@ PATCH /registrations/reg-8821/
   <span class="key">"city"</span>:                <span class="str">"Amsterdam"</span>,
   <span class="key">"country"</span>:             <span class="str">"NL"</span>,
   <span class="key">"company_type"</span>:        <span class="str">"restaurant"</span>,
-  <span class="key">"vat_number"</span>:          <span class="str">"NL123456789B01"</span>,
-  <span class="key">"kvk_number"</span>:          <span class="str">"12345678"</span>,
   <span class="key">"contact_person_name"</span>: <span class="str">"Jane De Vries"</span>,
   <span class="key">"contact_person_email"</span>:<span class="str">"jane@techbistro.nl"</span>
 }
@@ -1039,7 +1015,7 @@ PATCH /registrations/reg-8821/
 
 <!-- STEP 7 — Spotlight -->
 <div class="step-content" id="step-7">
-  <p class="section-title">Merchant configures Spotlight — selects prompts, competitors, review platforms — Django persists and syncs to Uberall + CEYO</p>
+  <p class="section-title">Merchant configures Spotlight — selects prompts, competitors, review platforms — Django persists; frontend calls Uberall and CEYO directly</p>
 
   <div class="api-calls">
     <div class="full-section">
@@ -1136,17 +1112,17 @@ PATCH /registrations/reg-8821/
 }
 
 <span class="comment">// Response 201</span>
-{ <span class="key">"id"</span>: <span class="num">77</span>, <span class="key">"status"</span>: <span class="str">"syncing"</span> }</code></pre>
+{ <span class="key">"id"</span>: <span class="num">77</span> }</code></pre>
       </div>
     </div>
   </div>
 
   <div class="api-calls">
     <div class="full-section">
-      <div class="panel-header" style="background:var(--storage-bg);color:var(--storage);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--storage)"></span>Django → Uberall: Listing Syndication</div>
+      <div class="panel-header" style="background:var(--frontend-bg);color:var(--frontend);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--frontend)"></span>Frontend → Uberall: Listing Syndication (direct)</div>
       <div class="panel-body">
-        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Triggered by Django after Spotlight submission. Syncs business listing to 100+ directories.</p>
-<pre><code><span class="comment">// Fields synced to Uberall</span>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Called directly from the frontend after Spotlight submission. Syncs business listing to 100+ directories.</p>
+<pre><code><span class="comment">// Fields sent to Uberall from frontend</span>
 {
   <span class="key">"name"</span>:        <span class="str">"Tech Bistro"</span>,
   <span class="key">"street"</span>:      <span class="str">"Keizersgracht 123"</span>,
@@ -1162,15 +1138,15 @@ PATCH /registrations/reg-8821/
 }
 <span class="comment">// Platforms: Google, Yelp, TripAdvisor,
 // Bing, Apple Maps, Facebook + 90 more</span></code></pre>
-        <div class="callout warn" style="margin-top:0.75rem;"><span class="callout-icon">⚠</span><span><strong>Open question:</strong> Confirm Uberall API credentials and whether a Django Uberall integration module already exists.</span></div>
+        <div class="callout warn" style="margin-top:0.75rem;"><span class="callout-icon">⚠</span><span>Uberall API credentials needed. Confirm with team before implementation.</span></div>
       </div>
     </div>
 
     <div class="full-section">
-      <div class="panel-header" style="background:var(--stripe-bg);color:var(--stripe);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--stripe)"></span>Django → CEYO: AI Prompt Tracking</div>
+      <div class="panel-header" style="background:var(--stripe-bg);color:var(--stripe);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--stripe)"></span>Frontend → CEYO: AI Prompt Tracking (direct)</div>
       <div class="panel-body">
-        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Triggered by Django after Spotlight submission. Pushes AI prompt data for LLM ranking.</p>
-<pre><code><span class="comment">// Fields pushed to CEYO</span>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Called directly from the frontend after Spotlight submission. Pushes AI prompt data for LLM ranking.</p>
+<pre><code><span class="comment">// Fields sent to CEYO from frontend</span>
 {
   <span class="key">"business_name"</span>: <span class="str">"Tech Bistro"</span>,
   <span class="key">"target_keywords"</span>: [
@@ -1190,12 +1166,12 @@ PATCH /registrations/reg-8821/
 }
 <span class="comment">// Used for: AI platform rankings,
 // LLM mention tracking, prompt optimisation</span></code></pre>
-        <div class="callout warn" style="margin-top:0.75rem;"><span class="callout-icon">⚠</span><span><strong>Open question:</strong> Confirm CEYO API credentials and endpoint. Confirm whether integration exists in Django or needs to be built.</span></div>
+        <div class="callout warn" style="margin-top:0.75rem;"><span class="callout-icon">⚠</span><span>CEYO API credentials and endpoint needed. Confirm with team before implementation.</span></div>
       </div>
     </div>
   </div>
 
-  <div class="callout info"><span class="callout-icon">ℹ</span><span>Uberall and CEYO sync run asynchronously after Django receives the Spotlight submission. Failures are logged and retried — the merchant advances to the next step immediately regardless of sync outcome.</span></div>
+  <div class="callout info"><span class="callout-icon">ℹ</span><span>Django <code>POST /spotlight/</code> persists data only — no Uberall or CEYO sync. Frontend calls both APIs directly after the Django call completes. If either external call fails, log the error client-side and advance the merchant regardless.</span></div>
 </div>
 
 </div>
