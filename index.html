@@ -143,16 +143,14 @@
 <div class="container">
 
 <h1>Data Mapping: SOUS Onboarding Frontend → Django</h1>
-<p class="subtitle">Field-by-field mapping with API payloads for each registration step. Ticket: PAT-573.</p>
+<p class="subtitle">Field-by-field mapping with API payloads for each registration step. Ticket: <a href="https://linear.app/poweredbysous/issue/PAT-573/connect-onboarding-frontend-with-backend" target="_blank" style="color:var(--stripe);text-decoration:underline;text-underline-offset:3px;">PAT-573 — Connect onboarding frontend with backend</a></p>
 <div class="verified-badge">✓ Verified against Django OpenAPI spec (eat-sous v1) + frontend codebase (sous-onboard-flow)</div>
 
 <div class="step-nav">
   <button class="step-btn fe active" onclick="showStep(0)">1. Account &amp; Contact</button>
   <button class="step-btn dj" onclick="showStep(1)">2. Company Info</button>
   <button class="step-btn dj" onclick="showStep(6)">3. Commerce</button>
-  <button class="step-btn st" onclick="showStep(2)">4. Subscription</button>
-  <button class="step-btn" onclick="showStep(7)">5. Spotlight</button>
-  <button class="step-btn st" onclick="showStep(3)">6. Stripe Connect ⏸</button>
+  <button class="step-btn" onclick="showStep(7)">4. Spotlight</button>
   <button class="step-btn" onclick="showStep(4)">Full Field Map</button>
   <button class="step-btn hs" onclick="showStep(5)">HubSpot Sync</button>
 </div>
@@ -183,11 +181,7 @@
           <span class="field fe-field">tos_agreed_at</span> — ISO 8601 timestamp, set client-side at moment of checkbox tick<br>
           <span class="field fe-field">tos_agreed_ip</span> — see open question below
         </div></div>
-        <div class="callout danger" style="margin-top:0.5rem;"><span class="callout-icon">!</span><div><strong>Open question — IP address capture:</strong> Two options:<br><br>
-          <strong>Option A (recommended):</strong> Django reads <code>REMOTE_ADDR</code> / <code>X-Forwarded-For</code> from the request server-side. More reliable, cannot be spoofed by the client. No extra frontend work.<br><br>
-          <strong>Option B:</strong> Frontend fetches the user's IP (e.g. via <code>api.ipify.org</code>) and sends it as <code>tos_agreed_ip</code> in the request body. Simpler but the value can be manipulated.<br><br>
-          Team needs to decide before implementation. Option A is strongly preferred for legal/compliance purposes.
-        </div></div>
+        <div class="callout success" style="margin-top:0.5rem;"><span class="callout-icon">✓</span><div><strong>Decided:</strong> IP is captured from the frontend (e.g. via <code>api.ipify.org</code>) and sent as <code>tos_agreed_ip</code> in the request body. Risk of client-side manipulation is accepted.</div></div>
       </div>
     </div>
 
@@ -232,7 +226,7 @@ getIdToken(<span class="comment">/* forceRefresh */</span> <span class="num">fal
   <span class="key">"phone"</span>:        <span class="str">"+31612345678"</span>,   <span class="comment">// country_code + number concatenated</span>
   <span class="key">"tos_agreed"</span>:    <span class="num">true</span>,
   <span class="key">"tos_agreed_at"</span>: <span class="str">"2026-02-25T14:32:10Z"</span>,  <span class="comment">// client-side UTC timestamp</span>
-  <span class="key">"tos_agreed_ip"</span>: <span class="str">"203.0.113.42"</span>   <span class="comment">// see open question re: capture method</span>
+  <span class="key">"tos_agreed_ip"</span>: <span class="str">"203.0.113.42"</span>   <span class="comment">// fetched client-side via api.ipify.org</span>
 }
 
 <span class="comment">// Response 201 Created</span>
@@ -385,163 +379,6 @@ PATCH /registrations/reg-8821/
     <div class="bdd-cards">
       <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-1</span><span class="bdd-name">Successful Step 1 submission</span></a>
       <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-2</span><span class="bdd-name">Email already registered in Firebase</span></a>
-    </div>
-  </div>
-</div>
-
-<!-- STEP 3 -->
-<div class="step-content" id="step-2">
-  <p class="section-title">Merchant selects plan and billing period, clicks "Subscribe" — Django generates the Stripe redirect URL</p>
-
-  <div class="api-calls">
-    <div class="full-section">
-      <div class="panel-header" style="background:var(--frontend-bg);color:var(--frontend);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--frontend)"></span>Screen: Plan Selection — Form Fields</div>
-      <div class="panel-body">
-<pre><code><span class="comment">// RegistrationContext state</span>
-{
-  <span class="key">"selectedPlan"</span>:    <span class="str highlight">"launch"</span>,  <span class="comment">// launch | grow | scale</span>
-  <span class="key">"billingPeriod"</span>:   <span class="str highlight">"monthly"</span> <span class="comment">// monthly | yearly</span>
-}
-<span class="comment">// Merchant clicks "Subscribe"</span></code></pre>
-        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">ℹ</span><span>The plan/billing selection lives in <span class="field fe-field">src/components/registration/Step3Pricing.tsx</span>. No Django checkout endpoint — payments are handled via a Stripe payment link with <code>prefilled_email</code>.</span></div>
-      </div>
-    </div>
-
-    <div class="full-section">
-      <div class="panel-header" style="background:var(--stripe-bg);color:var(--stripe);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--stripe)"></span>Stripe: Payment Link (no backend call)</div>
-      <div class="panel-body">
-<pre><code><span class="comment">// Frontend constructs a Stripe payment link URL
-// with merchant email prefilled</span>
-
-<span class="comment">// Base payment link (configured in Stripe dashboard)</span>
-<span class="key">base_url</span> = <span class="str">"https://buy.stripe.com/&lt;link_id&gt;"</span>
-
-<span class="comment">// Append prefilled email so Stripe can
-// match subscription to existing company</span>
-<span class="key">checkout_url</span> = base_url
-  + <span class="str">"?prefilled_email="</span>
-  + encodeURIComponent(merchant_email)
-
-<span class="comment">// Frontend redirects to checkout_url</span>
-<span class="comment">// No Django call needed</span></code></pre>
-        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">ℹ</span><span>Company, kitchen, and vendor records must already exist in Django before opening the payment link, so Stripe can be linked to the correct account by email lookup in the webhook.</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="api-calls">
-    <div class="full-section">
-      <div class="panel-header" style="background:var(--stripe-bg);color:var(--stripe);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--stripe)"></span>Stripe → Django: POST /stripe/webhook/ (server-side)</div>
-      <div class="panel-body">
-        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Stripe fires this independently of the browser after payment is confirmed.</p>
-<pre><code><span class="comment">// Stripe webhook payload</span>
-{
-  <span class="key">"type"</span>: <span class="str">"customer.subscription.created"</span>,
-  <span class="key">"data"</span>: {
-    <span class="key">"object"</span>: {
-      <span class="key">"id"</span>:             <span class="str">"sub_1NkQzBPwXy9876"</span>,
-      <span class="key">"status"</span>:         <span class="str">"active"</span>,
-      <span class="key">"customer_email"</span>: <span class="str">"jane@techbistro.nl"</span>,
-      <span class="key">"customer"</span>:       <span class="str">"cus_Abc123"</span>
-    }
-  }
-}
-<span class="comment">// Django looks up vendor by email
-// and links subscription → 200 OK</span></code></pre>
-        <div class="callout warn"><span class="callout-icon">⚠</span><span>Django must link the subscription to the correct vendor/company by <code>customer_email</code>. Confirm this lookup logic exists in the webhook handler.</span></div>
-      </div>
-    </div>
-
-    <div class="full-section">
-      <div class="panel-header" style="background:var(--frontend-bg);color:var(--frontend);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--frontend)"></span>Stripe → Frontend: Return URL Handling</div>
-      <div class="panel-body">
-        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Stripe redirects browser back to the onboarding URL with query params.</p>
-<pre><code><span class="comment">// Success return</span>
-?payment_success=true
-
-<span class="comment">// Detected in RegistrationFlow.tsx</span>
-<span class="key">if</span> (searchParams.get(<span class="str">"payment_success"</span>)) {
-  localStorage.payment_status = <span class="str">"paid"</span>
-  completeStep(<span class="str">"subscription"</span>)
-}
-
-<span class="comment">// Cancellation return</span>
-?payment_cancelled=true
-
-<span class="key">if</span> (searchParams.get(<span class="str">"payment_cancelled"</span>)) {
-  <span class="comment">// show: "Payment was not completed.</span>
-  <span class="comment">//        Please try again."</span>
-  <span class="comment">// stay on Subscription step</span>
-}</code></pre>
-        <div class="storage-bar" style="margin-top:0.75rem;">localStorage ← <strong>payment_status</strong>: "paid"</div>
-      </div>
-    </div>
-  </div>
-  <div class="bdd-section">
-    <div class="bdd-section-title">↗ BDD Scenarios — <a href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank">see PRD</a></div>
-    <div class="bdd-cards">
-      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-11</span><span class="bdd-name">Successful plan selection and payment</span></a>
-      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-12</span><span class="bdd-name">Merchant cancels Stripe Checkout</span></a>
-    </div>
-  </div>
-</div>
-
-<!-- STEP 4 -->
-<div class="step-content" id="step-3">
-  <div class="callout danger" style="margin-bottom:1.5rem;"><span class="callout-icon">⏸</span><div><strong>DEFERRED — Removed from onboarding flow.</strong> Stripe Connect (merchant payout account setup) will not be part of the initial launch. This tab is kept for reference. See the PRD "Deferred" section for BDD scenarios and checklist items.</div></div>
-  <p class="section-title">Merchant clicks "Connect with Stripe" — Django generates the Connect onboarding URL</p>
-
-  <div class="api-calls">
-    <div class="full-section">
-      <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>Django: GET /stripe/onboarding-link/</div>
-      <div class="panel-body">
-        <p style="font-size:0.8rem;margin-bottom:0.75rem;"><span class="method get">GET</span><span class="endpoint">/eat-sous/v1/api/stripe/onboarding-link/</span></p>
-<pre><code><span class="comment">// Headers only — no request body</span>
-<span class="key">Authorization</span>: Bearer eyJhbGci... <span class="comment">// fresh token</span>
-
-<span class="comment">// Response 200</span>
-{
-  <span class="key">"onboarding_url"</span>: <span class="str">"https://connect.stripe.com/setup/s/acct_1NkQzB..."</span>,
-  <span class="key">"account_id"</span>:     <span class="str">"acct_1NkQzBPwXy9876"</span>
-}</code></pre>
-        <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">→</span><span>Frontend immediately redirects browser to <code>onboarding_url</code>. Stripe handles bank account collection.</span></div>
-      </div>
-    </div>
-
-    <div class="full-section">
-      <div class="panel-header" style="background:var(--frontend-bg);color:var(--frontend);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--frontend)"></span>Stripe → Frontend: Return URL Handling</div>
-      <div class="panel-body">
-        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Stripe redirects back with one of two params depending on outcome.</p>
-<pre><code><span class="comment">// Happy path: onboarding completed</span>
-?connect_return=true
-
-<span class="key">if</span> (searchParams.get(<span class="str">"connect_return"</span>)) {
-  localStorage.stripe_account_id    = <span class="str">"acct_1NkQzBPwXy9876"</span>
-  localStorage.stripe_connect_status = <span class="str">"active"</span>
-  completeStep(<span class="str">"commerce"</span>)
-}
-
-<span class="comment">// Expired link: merchant took too long</span>
-?connect_refresh=true
-
-<span class="key">if</span> (searchParams.get(<span class="str">"connect_refresh"</span>)) {
-  <span class="comment">// Call GET /stripe/onboarding-link/ again</span>
-  <span class="comment">// Redirect to the new URL</span>
-  <span class="comment">// Do NOT show error to merchant</span>
-}</code></pre>
-        <div class="storage-bar" style="margin-top:0.75rem;">localStorage ← <strong>stripe_account_id</strong>: "acct_1Nk..." &nbsp;|&nbsp; <strong>stripe_connect_status</strong>: "active"</div>
-        <div class="callout warn" style="margin-top:0.5rem;"><span class="callout-icon">⚠</span><span><code>connect_refresh</code> means the Stripe link expired (15–30 min timeout). Silently re-fetch and redirect — do NOT show an error message. The merchant will see the same Stripe screen again.</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="callout info"><span class="callout-icon">ℹ</span><span><strong>Current gap:</strong> <code>getStripeConnectOnboardingLink</code> in <span class="field fe-field">src/services/api.ts</span> is never called from any component. The "Connect bank account" screen and its button need to be identified or built. Where it appears in the step flow is an open question for the team.</span></div>
-  <div class="bdd-section">
-    <div class="bdd-section-title">↗ BDD Scenarios — <a href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank">see PRD</a></div>
-    <div class="bdd-cards">
-      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-8</span><span class="bdd-name">First-time Stripe Connect setup</span></a>
-      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-9</span><span class="bdd-name">Merchant returns after completing Stripe onboarding</span></a>
-      <a class="bdd-card" href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank"><span class="bdd-id">BDD-10</span><span class="bdd-name">Stripe link expired</span></a>
     </div>
   </div>
 </div>
