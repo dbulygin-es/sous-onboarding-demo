@@ -823,6 +823,7 @@ PATCH /registrations/reg-8821/
   </div>
 
   <div class="callout danger"><span class="callout-icon">!</span><div><strong>Sequential dependency:</strong> kitchen creation requires <code>company_id</code>; vendor creation requires <code>kitchen_id</code>. Do NOT run these in parallel. On partial failure, store whichever IDs were returned and retry only the failed call on the next "Continue" click.</div></div>
+  <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">ℹ</span><div><strong>vendor_id timing change:</strong> The current mocked frontend generates a fake <code>vendor_id</code> UUID at Step 1 (account submission). In the Django-integrated flow, <code>vendor_id</code> is not available until <code>POST /vendors/</code> succeeds here at Step 2. Any frontend code that reads <code>state.meta.vendor_id</code> before Commerce completes must expect <code>null</code> and not block on it.</div></div>
   <div class="bdd-section">
     <div class="bdd-section-title">↗ BDD Scenarios — <a href="https://linear.app/poweredbysous/document/prd-connect-onboarding-frontend-with-backend-pat-573-2a95e0fb234f" target="_blank">see PRD</a></div>
     <div class="bdd-cards">
