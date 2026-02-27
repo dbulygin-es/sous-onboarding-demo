@@ -152,7 +152,7 @@
   <button class="step-btn dj" onclick="showStep(6)">3. Commerce</button>
   <button class="step-btn" onclick="showStep(7)">4. Spotlight</button>
   <button class="step-btn" onclick="showStep(4)">Full Field Map</button>
-  <button class="step-btn hs" onclick="showStep(5)">HubSpot Sync</button>
+  <button class="step-btn hs" onclick="showStep(5)" style="display:none">HubSpot Sync</button>
 </div>
 
 <!-- STEP 1 -->
@@ -241,7 +241,7 @@ getIdToken(<span class="comment">/* forceRefresh */</span> <span class="num">fal
     </div>
   </div>
 
-  <div class="full-section">
+  <div class="full-section" style="display:none">
     <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>Django: POST /registrations/ — Create Draft <span class="badge badge-new">Phase 4</span></div>
     <div class="panel-body">
       <p style="font-size:0.8rem;margin-bottom:0.75rem;"><span class="method post">POST</span><span class="endpoint">/eat-sous/v1/api/registrations/</span></p>
@@ -366,9 +366,9 @@ localStorage.company_draft = {
   <span class="key">"business_type"</span>: <span class="str">"restaurant"</span>
 }
 
-<span class="comment">// Phase 4 only:</span>
+<span style="display:none"><span class="comment">// Phase 4 only:</span>
 PATCH /registrations/reg-8821/
-<span class="comment">// → 200 OK (cross-device resume)</span></code></pre>
+<span class="comment">// → 200 OK (cross-device resume)</span></span></code></pre>
         <div class="callout info" style="margin-top:0.75rem;"><span class="callout-icon">→</span><span>The merchant continues to the Commerce step where company, kitchen, and vendor records are created in Django.</span></div>
       </div>
     </div>
@@ -581,8 +581,8 @@ PATCH /registrations/reg-8821/
   <div class="callout success"><span class="callout-icon">✓</span><div>All fields verified against frontend types (<span class="field fe-field">src/types/registration.ts</span>) and Django OpenAPI spec. Fields marked <span class="field req-field">red</span> are required in Django. Fields in <span class="field storage-field">sky blue</span> come from localStorage (set in earlier steps).</div></div>
 </div>
 
-<!-- STEP 6 — HubSpot Sync -->
-<div class="step-content" id="step-5">
+<!-- STEP 6 — HubSpot Sync (Phase 5 — hidden) -->
+<div class="step-content" id="step-5" style="display:none">
   <p class="section-title">On completion — Django background task (server-side, never from browser)</p>
   <div class="callout info" style="margin-bottom:1.5rem;"><span class="callout-icon">ℹ</span><span>Triggered when Django marks <code>registration.status = "complete"</code>. The merchant sees the completion screen immediately — HubSpot sync runs asynchronously in a Django task queue. Failures are logged and retried; the merchant is never blocked.</span></div>
 
@@ -768,9 +768,9 @@ POST /kitchens/
 POST /vendors/  <span class="comment">// location 1 → { id: 334 }</span>
 POST /vendors/  <span class="comment">// location 2 → { id: 335 }</span>
 
-<span class="comment">// 4. Record progress (Phase 4)</span>
+<span style="display:none"><span class="comment">// 4. Record progress (Phase 4)</span>
 PATCH /registrations/reg-8821/
-<span class="comment">// → 200 OK</span></code></pre>
+<span class="comment">// → 200 OK</span></span></code></pre>
         <div class="storage-bar" style="margin-top:1rem;">localStorage ← <strong>company_id</strong>: 501 &nbsp;|&nbsp; <strong>kitchen_id</strong>: 887 &nbsp;|&nbsp; <strong>vendor_ids</strong>: [334, 335, ...]</div>
       </div>
     </div>
