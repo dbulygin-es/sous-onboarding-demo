@@ -158,6 +158,7 @@
 <!-- STEP 1 -->
 <div class="step-content visible" id="step-0">
   <p class="section-title">Merchant fills in Account &amp; Contact, clicks "Continue" — Firebase runs first, Django second</p>
+  <div class="callout warn" style="margin-bottom:1.5rem;"><span class="callout-icon">⚠</span><div><strong>What can go wrong:</strong> A merchant who previously abandoned registration will hit "email already in use" — the UI must prompt login, not re-registration. If <code>/signup-with-sso/</code> fails after Firebase creates the account, the same email stays locked in Firebase until ops clears it.</div></div>
 
   <div class="api-calls">
     <div class="full-section">
@@ -276,6 +277,7 @@ getIdToken(<span class="comment">/* forceRefresh */</span> <span class="num">fal
 <!-- STEP 2 -->
 <div class="step-content" id="step-1">
   <p class="section-title">Merchant completes company info screens, clicks "Continue" — data saved to draft. Django calls happen at the Commerce step.</p>
+  <div class="callout warn" style="margin-bottom:1.5rem;"><span class="callout-icon">⚠</span><div><strong>What can go wrong:</strong> Data at this step lives in the browser only. If the merchant closes the tab or switches devices before submitting the Commerce step, all company details are lost and must be re-entered. No error states here — the only risk is data loss.</div></div>
 
   <div class="flow">
     <div class="panel fe">
@@ -436,10 +438,10 @@ PATCH /registrations/reg-8821/
           <td style="font-size:0.78rem;">ISO 8601 UTC. Set client-side at checkbox tick.</td>
         </tr>
         <tr>
-          <td><span style="font-style:italic;color:var(--text-muted);font-size:0.78rem;">TBD — see open question</span></td>
+          <td><span class="field fe-field">tos_agreed_ip</span> <span style="font-size:0.72rem;color:var(--text-muted);">(via api.ipify.org)</span></td>
           <td class="arrow-inline">→</td>
           <td><span class="field dj-field">tos_agreed_ip</span></td>
-          <td style="font-size:0.78rem;"><strong>Option A (recommended):</strong> Django reads from <code>REMOTE_ADDR</code> / <code>X-Forwarded-For</code>. <strong>Option B:</strong> frontend sends as request body field. Team to decide.</td>
+          <td style="font-size:0.78rem;">Frontend fetches via <code>api.ipify.org</code> and sends as request body field. Risk of client-side manipulation is accepted.</td>
         </tr>
 
         <tr class="group-header"><td colspan="4">POST /companies/ <span class="badge badge-new">NEW</span></td></tr>
@@ -556,25 +558,6 @@ PATCH /registrations/reg-8821/
           <td style="font-size:0.78rem;">Default. Ops sets later.</td>
         </tr>
 
-        <tr class="group-header"><td colspan="4">POST /stripe/checkout/</td></tr>
-        <tr>
-          <td><span class="field fe-field">selectedPlan</span></td>
-          <td class="arrow-inline">→</td>
-          <td><span class="field dj-field">plan</span></td>
-          <td style="font-size:0.78rem;">Direct copy (launch | grow | scale)</td>
-        </tr>
-        <tr>
-          <td><span class="field fe-field">billingPeriod</span></td>
-          <td class="arrow-inline">→</td>
-          <td><span class="field dj-field">billing_period</span></td>
-          <td style="font-size:0.78rem;">Direct copy (monthly | yearly)</td>
-        </tr>
-        <tr>
-          <td><span class="field storage-field">vendor_id</span> <span style="font-size:0.72rem;color:var(--text-muted);">(from localStorage)</span></td>
-          <td class="arrow-inline">→</td>
-          <td><span class="field dj-field">vendor_id</span></td>
-          <td style="font-size:0.78rem;">FK reference (integer)</td>
-        </tr>
       </table>
     </div>
   </div>
@@ -677,6 +660,7 @@ PATCH /registrations/reg-8821/
 <!-- STEP 6 — Commerce -->
 <div class="step-content" id="step-6">
   <p class="section-title">Merchant answers commerce questions, clicks "Continue" — Django calls to create company (once), kitchen (once), vendor (once per location)</p>
+  <div class="callout warn" style="margin-bottom:1.5rem;"><span class="callout-icon">⚠</span><div><strong>What can go wrong:</strong> Any of the three API calls can fail independently, leaving partial state. Without idempotency guards, retrying creates duplicate records silently. Firebase tokens are most likely to expire here — this is the longest and most critical step.</div></div>
 
   <div class="flow">
     <div class="panel fe">
@@ -853,6 +837,7 @@ PATCH /registrations/reg-8821/
 <!-- STEP 7 — Spotlight -->
 <div class="step-content" id="step-7">
   <p class="section-title">Merchant configures Spotlight — selects prompts, competitors, review platforms — Django persists; frontend calls Uberall and CEYO directly</p>
+  <div class="callout warn" style="margin-bottom:1.5rem;"><span class="callout-icon">⚠</span><div><strong>What can go wrong:</strong> If CEYO or Uberall credentials are not yet configured, external calls fail silently — the merchant sees a success screen but their listing is not live. Django <code>/spotlight/</code> persists regardless; ops must detect and retry the external sync via logs.</div></div>
 
   <div class="api-calls">
     <div class="full-section">
@@ -922,8 +907,7 @@ PATCH /registrations/reg-8821/
 
 <span class="comment">// Request body</span>
 {
-  <span class="key">"registration_id"</span>: <span class="str">"reg-8821"</span>,
-  <span class="key">"legal_name"</span>:       <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"vendor_id"</span>:         <span class="num">334</span>,   <span class="comment">// ← from localStorage</span>
   <span class="key">"spotlight"</span>: {
     <span class="key">"selected_location_name"</span>: <span class="str">"Tech Bistro"</span>,
     <span class="key">"website_url"</span>:  <span class="str">"https://techbistro.nl"</span>,
