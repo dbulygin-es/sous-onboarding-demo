@@ -328,8 +328,8 @@ token = getIdToken(<span class="num">true</span>)
 }
 
 <span class="comment">// 3. Slug derivation</span>
-slug = slugify(legal_name)
-<span class="comment">// "Tech Bistro BV" → "tech-bistro-bv"</span>
+slug = slugify(trading_name)
+<span class="comment">// "Tech Bistro" → "tech-bistro"</span>
 
 <span class="comment">// 4. Contact person name</span>
 contact_person_name =
@@ -446,22 +446,22 @@ PATCH /registrations/reg-8821/
 
         <tr class="group-header"><td colspan="4">POST /companies/ <span class="badge badge-new">NEW</span></td></tr>
         <tr>
-          <td><span class="field fe-field">company.legal_name</span></td>
+          <td><span class="field fe-field">company.trading_name</span> <span style="font-size:0.72rem;color:var(--text-muted);">(brand/display name)</span></td>
           <td class="arrow-inline">→</td>
           <td><span class="field dj-field">name</span></td>
+          <td style="font-size:0.78rem;">Direct copy. Frontend field name TBC — see open question.</td>
+        </tr>
+        <tr>
+          <td><span class="field fe-field">company.legal_name</span> <span style="font-size:0.72rem;color:var(--text-muted);">(legal entity name)</span></td>
+          <td class="arrow-inline">→</td>
+          <td><span class="field dj-field">invoice_legal_name</span></td>
           <td style="font-size:0.78rem;">Direct copy</td>
         </tr>
         <tr>
-          <td><span class="field fe-field">company.legal_name</span></td>
-          <td class="arrow-inline">→</td>
-          <td><span class="field dj-field">invoice_legal_name</span></td>
-          <td style="font-size:0.78rem;">Duplicate of name</td>
-        </tr>
-        <tr>
-          <td><span class="field fe-field">company.legal_name</span></td>
+          <td><span class="field fe-field">company.trading_name</span></td>
           <td class="arrow-inline">→</td>
           <td><span class="field dj-field">slug</span></td>
-          <td style="font-size:0.78rem;">Slugify: "Tech Bistro BV" → "tech-bistro-bv"</td>
+          <td style="font-size:0.78rem;">Slugify from trading name: "Tech Bistro" → "tech-bistro"</td>
         </tr>
         <tr>
           <td><span class="field fe-field">company.address_line1</span></td>
@@ -508,10 +508,10 @@ PATCH /registrations/reg-8821/
 
         <tr class="group-header"><td colspan="4">POST /kitchens/</td></tr>
         <tr>
-          <td><span class="field fe-field">company.legal_name</span></td>
+          <td><span class="field fe-field">company.trading_name</span></td>
           <td class="arrow-inline">→</td>
           <td><span class="field dj-field">name</span></td>
-          <td style="font-size:0.78rem;">Direct copy</td>
+          <td style="font-size:0.78rem;">Direct copy (trading name)</td>
         </tr>
         <tr>
           <td><span class="field storage-field">company_id</span> <span style="font-size:0.72rem;color:var(--text-muted);">(from localStorage)</span></td>
@@ -540,10 +540,10 @@ PATCH /registrations/reg-8821/
 
         <tr class="group-header"><td colspan="4">POST /vendors/ <span class="badge badge-new">NEW</span></td></tr>
         <tr>
-          <td><span class="field fe-field">company.legal_name</span></td>
+          <td><span class="field fe-field">company.trading_name</span></td>
           <td class="arrow-inline">→</td>
           <td><span class="field dj-field">name</span></td>
-          <td style="font-size:0.78rem;">Direct copy</td>
+          <td style="font-size:0.78rem;">Direct copy (trading name)</td>
         </tr>
         <tr>
           <td><span class="field storage-field">kitchen_id</span> <span style="font-size:0.72rem;color:var(--text-muted);">(from localStorage)</span></td>
@@ -711,8 +711,8 @@ token = getIdToken(<span class="num">true</span>)
 }
 
 <span class="comment">// 3. Slug derivation</span>
-slug = slugify(legal_name)
-<span class="comment">// "Tech Bistro BV" → "tech-bistro-bv"</span>
+slug = slugify(trading_name)
+<span class="comment">// "Tech Bistro" → "tech-bistro"</span>
 
 <span class="comment">// 4. Contact person name</span>
 contact_person_name =
@@ -765,9 +765,9 @@ PATCH /registrations/reg-8821/
       <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>POST /companies/ <span class="badge badge-new">NEW</span></div>
       <div class="panel-body">
 <pre><code>{
-  <span class="key">"name"</span>:                <span class="str">"Tech Bistro BV"</span>,
-  <span class="key">"invoice_legal_name"</span>:  <span class="str">"Tech Bistro BV"</span>,
-  <span class="key">"slug"</span>:                <span class="str">"tech-bistro-bv"</span>,
+  <span class="key">"name"</span>:                <span class="str">"Tech Bistro"</span>,      <span class="comment">// trading name</span>
+  <span class="key">"invoice_legal_name"</span>:  <span class="str">"Tech Bistro BV"</span>,  <span class="comment">// legal entity name</span>
+  <span class="key">"slug"</span>:                <span class="str">"tech-bistro"</span>,     <span class="comment">// slugified from trading name</span>
   <span class="key">"street"</span>:              <span class="str">"Keizersgracht 123"</span>,
   <span class="key">"postal_code"</span>:         <span class="str">"1015 CJ"</span>,
   <span class="key">"city"</span>:                <span class="str">"Amsterdam"</span>,
@@ -777,7 +777,7 @@ PATCH /registrations/reg-8821/
   <span class="key">"contact_person_email"</span>:<span class="str">"jane@techbistro.nl"</span>
 }
 <span class="comment">// Response 201</span>
-{ <span class="key">"id"</span>: <span class="num">501</span>, <span class="key">"name"</span>: <span class="str">"Tech Bistro BV"</span> }</code></pre>
+{ <span class="key">"id"</span>: <span class="num">501</span>, <span class="key">"name"</span>: <span class="str">"Tech Bistro"</span> }</code></pre>
       </div>
     </div>
 
@@ -785,7 +785,7 @@ PATCH /registrations/reg-8821/
       <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>POST /kitchens/</div>
       <div class="panel-body">
 <pre><code>{
-  <span class="key">"name"</span>:                <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"name"</span>:                <span class="str">"Tech Bistro"</span>,     <span class="comment">// trading name</span>
   <span class="key">"company"</span>:             <span class="num">501</span>, <span class="comment">// ← company_id</span>
   <span class="key">"address_1"</span>:           <span class="str">"Keizersgracht 123"</span>,
   <span class="key">"postal_code"</span>:         <span class="str">"1015 CJ"</span>,
@@ -805,7 +805,7 @@ PATCH /registrations/reg-8821/
       <div class="panel-header" style="background:var(--django-bg);color:var(--django);border-bottom:1px solid var(--border);"><span class="dot" style="background:var(--django)"></span>POST /vendors/ <span class="badge badge-new">NEW</span></div>
       <div class="panel-body">
 <pre><code>{
-  <span class="key">"name"</span>:    <span class="str">"Tech Bistro BV"</span>,
+  <span class="key">"name"</span>:    <span class="str">"Tech Bistro"</span>,     <span class="comment">// trading name</span>
   <span class="key">"kitchen"</span>: <span class="num">887</span>, <span class="comment">// ← kitchen_id</span>
   <span class="key">"description"</span>:
     <span class="str">""</span>,     <span class="comment">// empty default</span>
